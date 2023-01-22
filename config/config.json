@@ -1,0 +1,151 @@
+{
+    "capture_dir"            : "/media/data/",
+    "log_file"               : "/var/www/html/capture.log",
+    "checkmoov_log_file"     : "/var/www/html/checkmoov.log",
+    "log_backup_count"       : 2,
+    "log_max_bytes"          : 250000,
+    "startup_delay_secs"     : 10,
+    "segment_length"         : 3600,
+    "segment_wrap"           : 999999,
+    "health_poll_secs"       : 30,
+    "time_must_be_dead_secs" : 20,
+    "min_free_disk_percent"  : 5,
+    "onvif_wsdl_defs"        : "/usr/local/lib/python3.8/site-packages/wsdl",
+
+    "cameras" : [
+        {
+            "name"     : "front_of_house",
+            "username" : "admin",
+            "password" : "",
+            "ip"       : "192.168.0.107",
+            "port"     : 554,
+            "streams"  : [
+                { "name" : "high_res", "width" : 1920, "height" : 1080, "path" : "/Streaming/Channels/1" },
+                { "name" : "low_res",  "width" : 640,  "height" : 360,  "path" : "/Streaming/Channels/2" }
+            ]
+        },
+        {
+            "name"     : "back_of_house",
+            "username" : "admin",
+            "password" : "",
+            "ip"       : "192.168.0.108",
+            "port"     : 554,
+            "streams"  : [
+                { "name" : "high_res", "width" : 1920, "height" : 1080, "path" : "/Streaming/Channels/1" },
+                { "name" : "low_res",  "width" : 640,  "height" : 360,  "path" : "/Streaming/Channels/2" }
+            ]
+        },
+        {
+            "name"     : "kitchen",
+            "username" : "admin",
+            "password" : "",
+            "ip"       : "192.168.0.111",
+            "port"     : 554,
+            "streams"  : [
+                { "name" : "high_res", "width" : 1920, "height" : 1080, "path" : "/11" },
+                { "name" : "low_res",  "width" : 640,  "height" : 352,  "path" : "/22" }
+            ]
+        },
+        {
+            "name"     : "potting_shed_2",
+            "username" : "admin",
+            "password" : "",
+            "ip"       : "192.168.0.112",
+            "port"     : 554,
+            "streams"  : [
+                { "name" : "high_res", "width" : 1920, "height" : 1080, "path" : "/11" },
+                { "name" : "low_res",  "width" : 640,  "height" : 352,  "path" : "/22" }
+            ]
+        },
+        {
+            "name"     : "potting_shed",
+            "username" : "admin",
+            "password" : "",
+            "ip"       : "192.168.0.113",
+            "port"     : 554,
+            "streams"  : [
+                { "name" : "high_res", "width" : 1920, "height" : 1080, "path" : "/11" },
+                { "name" : "low_res",  "width" : 640,  "height" : 352,  "path" : "/22" }
+            ]
+        },
+        {
+            "name"     : "downstairs_hallway",
+            "username" : "admin",
+            "password" : "",
+            "ip"       : "192.168.0.114",
+            "port"     : 554,
+            "streams"  : [
+                { "name" : "high_res", "width" : 1920, "height" : 1080, "path" : "/11" },
+                { "name" : "low_res",  "width" : 640,  "height" : 352,  "path" : "/22" }
+            ]
+        },
+        {
+            "name"     : "cat_flap",
+            "username" : "admin",
+            "password" : "",
+            "ip"       : "192.168.0.116",
+            "port"     : 554,
+            "streams"  : [
+                { "name" : "high_res", "width" : 1920, "height" : 1080, "path" : "/Streaming/Channels/1", "vtag" : "hvc1" },
+                { "name" : "low_res",  "width" : 640,  "height" : 360,  "path" : "/Streaming/Channels/2", "vtag" : "hvc1" }
+            ]
+        },
+        {
+            "name"     : "orangery_roof",
+            "username" : "admin",
+            "password" : "",
+            "ip"       : "192.168.0.117",
+            "port"     : 554,
+            "streams"  : [
+                { "name" : "high_res", "width" : 1920, "height" : 1080, "path" : "/profile0", "vtag" : "hvc1" },
+                { "name" : "low_res",  "width" : 640,  "height" : 360,  "path" : "/profile1", "vtag" : "hvc1" }
+            ]
+        },
+        {
+            "name"     : "shed",
+            "username" : "admin",
+            "password" : "",
+            "ip"       : "192.168.0.118",
+            "port"     : 554,
+            "streams"  : [
+                { "name" : "high_res", "width" : 1920, "height" : 1080, "path" : "/11", "vtag" : "hvc1" },
+                { "name" : "low_res",  "width" : 640,  "height" : 352,  "path" : "/22", "vtag" : "hvc1" }
+            ]
+        },
+        {
+            "name"     : "footpath",
+            "username" : "admin",
+            "password" : "",
+            "ip"       : "192.168.0.119",
+            "port"     : 554,
+            "streams"  : [
+                { "name" : "high_res", "width" : 1920, "height" : 1080, "path" : "/11", "vtag" : "hvc1" },
+                { "name" : "low_res",  "width" : 640,  "height" : 352,  "path" : "/22", "vtag" : "hvc1" }
+            ]
+        },
+        {
+            "name"     : "shed_door",
+            "username" : "admin",
+            "password" : "",
+            "ip"       : "192.168.0.120",
+            "port"     : 554,
+            "streams"  : [
+                { "name" : "high_res", "width" : 1920, "height" : 1080, "path" : "/Streaming/Channels/1", "vtag" : "hvc1" },
+                { "name" : "low_res",  "width" : 640,  "height" : 360,  "path" : "/Streaming/Channels/2", "vtag" : "hvc1" }
+            ]
+        },
+        {
+            "name"              : "side_of_shed",
+            "username"          : "admin",
+            "password"          : "",
+            "ip"                : "192.168.0.121",
+            "port"              : 554,
+            "onvif_port"        : 8000,
+            "reboot_on_failure" : true,
+            "streams"  : [
+                { "name" : "high_res", "width" : 3840, "height" : 2160, "path" : "/h265Preview_01_main", "vtag" : "hvc1", "map" : "0", "xargs" : "-bsf:a aac_adtstoasc" },
+                { "name" : "low_res",  "width" : 640,  "height" : 360,  "path" : "/h264Preview_01_sub", "vtag" : "hvc1" }
+            ]
+        }
+    ]
+}
