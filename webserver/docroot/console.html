@@ -1,0 +1,39 @@
+<html>
+<head><title>CCTV Console</title></head>
+<body style="background-color: black; margin: 0; height: 100%">
+<div style="font-size: 0">
+<script>
+//const baseUrl = 'http://pluto.local:8080';
+const baseUrl = '';
+const videosPerLine = 4;
+const videoWidth = (window.innerWidth / videosPerLine);
+
+const cameras = [
+    'shed',
+    'shed_door',
+    'side_of_shed',
+    'side_of_shed_2',
+    'footpath',
+    'potting_shed',
+    'potting_shed_2',
+    'kitchen',
+    'cat_flap',
+    'orangery_roof',
+    'front_of_house',
+    'back_of_house',
+    'downstairs_hallway'
+];
+
+cameras.forEach(function(name) {
+    let linkUrl  = baseUrl + '/cctv/' + name + '/high_res/live.m3u8';
+    let videoUrl = baseUrl + '/cctv/' + name + '/low_res/live.m3u8';
+
+    document.writeln('<a href="' + linkUrl + '">');
+    document.writeln('<video width="' + videoWidth + '" src="' + videoUrl + '" autoplay playsinline>');
+    document.writeln('</video>');
+    document.writeln('</a>');
+});
+</script>
+</div>
+</body>
+</html>

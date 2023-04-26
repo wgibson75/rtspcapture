@@ -1,0 +1,12 @@
+[Unit]
+Description=CCTV Server
+After=network.target
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/bin/node /usr/local/bin/server.js
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

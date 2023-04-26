@@ -1,0 +1,29 @@
+.large-text {
+    font-size: 200%;
+}
+
+body {
+    background-color: black;
+    color: #999966;
+}
+
+table {
+    border-spacing: 0px;
+    border-collapse: separate;
+}
+
+td {
+    padding: 0px;
+}
+
+a:link {
+    color: #999933;
+}
+
+a:visited {
+    color: #33cc33;
+}
+
+a:hover {
+    color: #cccc99;
+}

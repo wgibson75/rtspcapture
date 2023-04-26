@@ -1,7 +1,9 @@
 {
     "capture_dir"            : "/media/data/",
-    "log_file"               : "/var/www/html/capture.log",
-    "checkmoov_log_file"     : "/var/www/html/checkmoov.log",
+    "doc_root_dir"           : "/var/www/html/",
+    "logs_dir"               : "/var/www/html/logs",
+    "capture_log_file"       : "capture.log",
+    "checkmoov_log_file"     : "checkmoov.log",
     "log_backup_count"       : 2,
     "log_max_bytes"          : 250000,
     "startup_delay_secs"     : 10,
@@ -145,6 +147,17 @@
             "streams"  : [
                 { "name" : "high_res", "width" : 3840, "height" : 2160, "path" : "/h265Preview_01_main", "vtag" : "hvc1", "map" : "0", "xargs" : "-bsf:a aac_adtstoasc" },
                 { "name" : "low_res",  "width" : 640,  "height" : 360,  "path" : "/h264Preview_01_sub", "vtag" : "hvc1" }
+            ]
+        },
+        {
+            "name"     : "side_of_shed_2",
+            "username" : "admin",
+            "password" : "",
+            "ip"       : "192.168.0.122",
+            "port"     : 554,
+            "streams"  : [
+                { "name" : "high_res", "width" : 1920, "height" : 1080, "path" : "/Streaming/Channels/1", "vtag" : "hvc1" },
+                { "name" : "low_res",  "width" : 640,  "height" : 360,  "path" : "/Streaming/Channels/2", "vtag" : "hvc1" }
             ]
         }
     ]
