@@ -8,7 +8,7 @@ const express = require('express');
 const DEFAULT_SERVER_PORT = 8080;           // Default HTTP listening port
 const CONFIG_FILE         = '/usr/local/bin/config.json';
 const EXCLUDED_FILES      = [ 'init.mp4' ]; // Filenames to exclude
-const EXCLUDED_EXTS       = [ '.m4s' ];     // Extentions of files to exclude
+const EXCLUDED_EXTS       = [ '.m4s', '.css' ];     // Extentions of files to exclude
 
 // Read the configuration
 const CONFIG = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
