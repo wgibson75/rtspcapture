@@ -4,14 +4,33 @@ const url     = require('url');
 const fs      = require('graceful-fs');
 const mime    = require('mime-types');
 const express = require('express');
+const spawn   = require('child_process').spawn;
+const util    = require('util');
 
-const DEFAULT_SERVER_PORT = 8080;           // Default HTTP listening port
-const CONFIG_FILE         = '/usr/local/bin/config.json';
-const EXCLUDED_FILES      = [ 'init.mp4' ]; // Filenames to exclude
-const EXCLUDED_EXTS       = [ '.m4s', '.css' ];     // Extentions of files to exclude
+const DEFAULT_SERVER_PORT  = 8080;                    // Default HTTP listening port
+const CONFIG_FILE          = '/usr/local/bin/config.json';
+const EXCLUDED_FILES       = [ 'init.mp4' ];          // Filenames to exclude in directory listings
+const EXCLUDED_EXTS        = [ '.m4s', '.css' ];      // Extentions of files to exclude in directory listings
+const MAX_NUM_SNAPSHOTS    = 100;                     // Maximum number of snapshots (oldest will be deleted)
+
+// FFMPEG command for taking a snapshot image from camera
+//
+// Arguments: Username, Password, IP address, Port, Stream URL, Output JPEG file
+//
+const SNAPSHOT_CMD = 'ffmpeg -rtsp_transport tcp -skip_frame nokey -y -i rtsp://%s:%s@%s:%s%s -vframes 1 %s'
 
 // Read the configuration
-const CONFIG = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
+const CONFIG        = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
+const CAMERA_CONFIG = {};
+
+// Build lookup for camera configuration
+CONFIG.cameras.forEach((cam, i) => {
+    CAMERA_CONFIG[cam.name] = cam;
+});
+
+const SNAPSHOT_IMAGES_FOLDER = 'images';
+const SNAPSHOT_PATH          = path.join(CONFIG.doc_root_dir, CONFIG.snapshots_dir);
+const SNAPSHOT_IMAGES_PATH   = path.join(SNAPSHOT_PATH, SNAPSHOT_IMAGES_FOLDER);
 
 ///////////////////////////////////
 ////// Excluded file lookups //////
@@ -59,7 +78,8 @@ function main() {
     const requestHandlers = [
         [ /^.*$/,           requestHandler_log        ], // Log the HTTP request
         [ /^\/server.css$/, requestHandler_stylesheet ], // CSS for directory listings
-        [ /^.*$/,           requestHandler_content    ]  // Request content
+        [ /^\/snapshot$/,   requestHandler_snapshot   ], // Take a snapshot
+        [ /^.*$/,           requestHandler_content    ], // Request content
     ];
 
     requestHandlers.forEach(handler => {
@@ -86,6 +106,7 @@ function requestHandler_log(request, response, next) {
 }
 
 function requestHandler_stylesheet(request, response, next) {
+    logger.info('requestHandler_stylesheet');
     let stylesheet = getLocalPath(request.url);
     if (!fs.existsSync(stylesheet)) return response.sendStatus(404);
 
@@ -96,7 +117,35 @@ function requestHandler_stylesheet(request, response, next) {
     fs.createReadStream(stylesheet).pipe(response);
 }
 
+function requestHandler_snapshot(request, response, next) {
+    logger.info('requestHandler_snapshot');
+    response.end();
+
+    let cameras = typeof request.query.c == 'string' ? [request.query.c] : request.query.c;
+    let timestamp = getTimestampNow();
+
+    checkSnapshotDirsExist();
+
+    if (!cameras) { return; }
+
+    let snapshots = new Array();
+
+    cameras.forEach((cam, i) => {
+        if (!(cam in CAMERA_CONFIG)) {
+            logger.info('No such camera: ' + cam);
+            return;
+        }
+        let image = takeSnapshot(cam, timestamp);
+        snapshots.push(image);
+    });
+
+    if (snapshots.length == 0) { return; }
+
+    createSnapshotSummary(timestamp, snapshots);
+}
+
 function requestHandler_content(request, response, next) {
+    logger.info('requestHandler_content');
     let requestUrl = request.url.replace(/(\/)\/+/g, '$1');
     let filePath = getLocalPath(requestUrl);
 
@@ -115,18 +164,6 @@ function requestHandler_content(request, response, next) {
 //////////////////////////////
 ////// Content handlers //////
 //////////////////////////////
-
-function getDateString(d) {
-    return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2)
-        + ' ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
-}
-
-function getSizeString(s) {
-    return (s < 1024) ? s + ' bytes'
-        : (s < (1024 * 1024)) ? (s / 1024).toFixed(1) + ' K'
-            : (s < (1024 * 1024 * 1024)) ? (s / (1024 * 1024)).toFixed(1) + ' Mb'
-                : (s / (1024 * 1024 * 1024)).toFixed(1) + ' Gb'
-}
 
 function handleContent_dirListing(requestUrl, filePath, response) {
     const files = getFiles(filePath);
@@ -197,7 +234,121 @@ function handleContent_media(request, filePath, response) {
 ////// Utilities //////
 ///////////////////////
 
-function sortFilesByDate(dirPath, fitems) {
+function deleteSnapshot(filename) {
+    let summaryPath = path.join(SNAPSHOT_PATH, filename);
+    logger.info('Deleting: ' + summaryPath);
+    fs.unlinkSync(summaryPath);
+
+    let snapshotId = filename.replace(/^([0-9]+).*$/, "$1");
+    let imageRegex = new RegExp('^' + snapshotId + '_.*$');
+
+    fs.readdirSync(SNAPSHOT_IMAGES_PATH).forEach((filename) => {
+        if (filename.match(imageRegex)) {
+            let imagePath = path.join(SNAPSHOT_IMAGES_PATH, filename);
+            logger.info('Deleting: ' + imagePath);
+            fs.unlinkSync(imagePath);
+        }
+    })
+}
+
+function enforceMaxSnapshots() {
+    let files = [];
+    fs.readdirSync(SNAPSHOT_PATH).forEach((filename) => {
+        let fstat = fs.statSync(SNAPSHOT_PATH + '/' + filename);
+        let fitem = [filename, fstat];
+
+        if ((filename.charAt() == '.') || (fstat.isDirectory())) {
+            return;
+        }
+        files.push(fitem);
+    });
+
+    if (files.length > MAX_NUM_SNAPSHOTS) {
+        let sortedFiles = sortFilesByDate(files);
+        let deleteFiles = sortedFiles.slice(MAX_NUM_SNAPSHOTS);
+
+        deleteFiles.forEach((entry, i) => {
+            deleteSnapshot(entry[0]);
+        });
+    }
+}
+
+function getTimestampNow() {
+    let date = new Date()
+    return date.getTime();
+}
+
+function checkSnapshotDirsExist() {
+    if (!fs.existsSync(SNAPSHOT_PATH)) {
+        fs.mkdirSync(SNAPSHOT_PATH);
+    }
+    if (!fs.existsSync(SNAPSHOT_IMAGES_PATH)) {
+        fs.mkdirSync(SNAPSHOT_IMAGES_PATH);
+    }
+}
+
+function buildSnapshotImgPath(timestamp, camera) {
+    return path.join(SNAPSHOT_IMAGES_PATH, util.format('%s_%s.jpg', timestamp, camera));
+}
+
+function takeSnapshot(camera, timestamp) {
+    let config = CAMERA_CONFIG[camera];
+
+    let username = config.username;
+    let password = config.password;
+    let ip       = config.ip;
+    let port     = config.port;
+    let stream   = config.streams[0].path; // Take first highest quality stream
+
+    let snapshotFile = buildSnapshotImgPath(timestamp, camera);
+    let cmd = util.format(SNAPSHOT_CMD, username, password, ip, port, stream, snapshotFile);
+
+    let args = cmd.split(' ');
+    let exec = args.shift();
+
+    logger.info('Taking snapshot: ' + snapshotFile);
+    let cmdSpawn = spawn(exec, args, {
+        detached: true
+    });
+
+    cmdSpawn.on('close', (code, signal) => {
+        if (code == 0) return;
+        logger.info('Snapshot failed: ' + camera);
+    });
+
+    return path.basename(snapshotFile);
+}
+
+function createSnapshotSummary(timestamp, images) {
+    let data = '<html><head>';
+    data += '<link rel="stylesheet" href="/server.css">';
+    data += '</head><body><p>';
+
+    images.forEach((entry, i) => {
+        let imageUrl = path.join(SNAPSHOT_IMAGES_FOLDER, entry);
+        data += ('<a href="' + imageUrl + '"><img width="1024" src="' + imageUrl + '"></a><br>');
+    });
+    data += '</p></body></html>';
+
+    let summaryFile = path.join(SNAPSHOT_PATH, util.format('%s.html', timestamp));
+    logger.info('Creating: ' + summaryFile);
+    fs.writeFileSync(summaryFile, data);
+
+    enforceMaxSnapshots();
+}
+
+function getDateString(d) {
+    return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2)
+        + ' ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+}
+
+function getSizeString(s) {
+    return (s < 1024) ? s + ' bytes'
+        : (s < (1024 * 1024)) ? (s / 1024).toFixed(1) + ' K'
+            : (s < (1024 * 1024 * 1024)) ? (s / (1024 * 1024)).toFixed(1) + ' Mb'
+                : (s / (1024 * 1024 * 1024)).toFixed(1) + ' Gb'
+}
+function sortFilesByDate(fitems) {
     let sortedFiles = fitems.sort((a, b) => {
         let aStat = a[1], bStat = b[1];
         return new Date(bStat.birthtime).getTime() - new Date(aStat.birthtime).getTime();
@@ -205,7 +356,7 @@ function sortFilesByDate(dirPath, fitems) {
     return sortedFiles;
 }
 
-function sortFilesByName(dirPath, fitems) {
+function sortFilesByName(fitems) {
     let sortedFiles = fitems.sort((a, b) => {
         let aName = a[0], bName = b[0];
         return aName.localeCompare(bName, 'en', { numeric: true });
@@ -216,8 +367,8 @@ function sortFilesByName(dirPath, fitems) {
 function getFiles(dirPath) {
     let allItems = [], files = [], dirs = [];
     fs.readdirSync(dirPath).forEach((filename) => {
-        var fstat = fs.statSync(dirPath + '/' + filename);
-        var fitem = [filename, fstat];
+        let fstat = fs.statSync(dirPath + '/' + filename);
+        let fitem = [filename, fstat];
         if (fstat.isDirectory()) {
             dirs.push(fitem);
         }
@@ -229,13 +380,13 @@ function getFiles(dirPath) {
     });
 
     // Directories first
-    let sortedDirs = sortFilesByName(dirPath, dirs);
+    let sortedDirs = sortFilesByName(dirs);
     sortedDirs.forEach((x) => {
         allItems.push(x);
     });
 
     // Files
-    let sortedFiles = sortFilesByDate(dirPath, files);
+    let sortedFiles = sortFilesByDate(files);
     sortedFiles.forEach((x) => {
         allItems.push(x);
     });
@@ -256,12 +407,12 @@ function getLocalPath(requestedUrl) {
 // Get a list of IPv4 host IP addresses.
 function getHostIpList() {
     let rval = [];
-    let nif_list  = os.networkInterfaces();
+    let nifList  = os.networkInterfaces();
 
-    for (let nif in nif_list) {
-        for (let i in nif_list[nif]) {
-            if (nif_list[nif][i]['family'] === 'IPv4') {
-                rval.push(nif_list[nif][i]['address']);
+    for (let nif in nifList) {
+        for (let i in nifList[nif]) {
+            if (nifList[nif][i]['family'] === 'IPv4') {
+                rval.push(nifList[nif][i]['address']);
             }
         }
     }

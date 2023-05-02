@@ -3,7 +3,7 @@
     "express": "^4.17.1",
     "graceful-fs": "^4.2.6",
     "mime-types": "^2.1.31",
-    "winston": "^3.3.3",
-    "async": "^3.2.3"
+    "util": "^0.12.5",
+    "winston": "^3.3.3"
   }
 }
