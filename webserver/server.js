@@ -12,6 +12,7 @@ const CONFIG_FILE          = '/usr/local/bin/config.json';
 const EXCLUDED_FILES       = [ 'init.mp4' ];          // Filenames to exclude in directory listings
 const EXCLUDED_EXTS        = [ '.m4s', '.css' ];      // Extentions of files to exclude in directory listings
 const MAX_NUM_SNAPSHOTS    = 100;                     // Maximum number of snapshots (oldest will be deleted)
+const VIDEO_EXT            = 'mp4'                    // Video file extension
 
 // FFMPEG command for taking a snapshot image from camera
 //
@@ -79,7 +80,8 @@ function main() {
         [ /^.*$/,           requestHandler_log        ], // Log the HTTP request
         [ /^\/server.css$/, requestHandler_stylesheet ], // CSS for directory listings
         [ /^\/snapshot$/,   requestHandler_snapshot   ], // Take a snapshot
-        [ /^.*$/,           requestHandler_content    ], // Request content
+        [ /^\/play$/,       requestHandler_playVideo  ], // Play video
+        [ /^.*$/,           requestHandler_content    ]  // Request content
     ];
 
     requestHandlers.forEach(handler => {
@@ -142,6 +144,23 @@ function requestHandler_snapshot(request, response, next) {
     if (snapshots.length == 0) { return; }
 
     createSnapshotSummary(timestamp, snapshots);
+}
+
+function requestHandler_playVideo(request, response, next) {
+    let camera = request.query.c;
+    let timestamp = request.query.t;
+
+    let playbackFile = findVideoFile(camera, timestamp);
+
+    response.write('<html>');
+    response.write('<body style="background-color: black; margin: 0; height: 100%">');
+    response.write('<script>');
+    response.write('document.writeln("<video width=\'" + window.innerWidth + "\' src=\'' +
+                   playbackFile[0] + '#t=' + playbackFile[1] +
+                   '\' autoplay playsinline controls></video>")');
+    response.write('</script>')/
+    response.write('</body></html>');
+    response.end();
 }
 
 function requestHandler_content(request, response, next) {
@@ -234,6 +253,44 @@ function handleContent_media(request, filePath, response) {
 ////// Utilities //////
 ///////////////////////
 
+function findVideoFile(camera, timestamp) {
+    let cameraDir = path.join(CONFIG.capture_dir, camera);
+
+    if (!fs.existsSync(cameraDir)) {
+        logger.error('Directory does not exist: ' + cameraDir);
+        return;
+    }
+
+    let files = [];
+    let regex = new RegExp('.*\.' + VIDEO_EXT);
+    fs.readdirSync(cameraDir).forEach((filename) => {
+        if (!filename.match(regex)) {
+            return;
+        }
+        let fstat = fs.statSync(cameraDir + '/' + filename);
+        files.push([filename, fstat]);
+    });
+
+    if (files.length == 0) {
+        logger.error('No video files in: ' + cameraDir);
+        return;
+    }
+
+    let sortedFiles = sortFilesByDate(files);
+
+    for (let i = 0; i < sortedFiles.length; i++) {
+        let fstat = sortedFiles[i][1];
+
+        if (fstat.birthtime.getTime() <= timestamp) {
+            logger.info(sortedFiles[i][0]);
+            let startTime = timestamp - fstat.birthtime.getTime();
+            return [path.join(CONFIG.video_dir, camera, sortedFiles[i][0]), Math.round(startTime/1000)];
+            break;
+        }
+    }
+    return null;
+}
+
 function deleteSnapshot(filename) {
     let summaryPath = path.join(SNAPSHOT_PATH, filename);
     logger.info('Deleting: ' + summaryPath);
@@ -325,8 +382,11 @@ function createSnapshotSummary(timestamp, images) {
     data += '</head><body><p>';
 
     images.forEach((entry, i) => {
+        let match = entry.match(/^(\d+)_(.*?)\.jpg$/);
+        let timestamp = match[1];
+        let camera = match[2];
         let imageUrl = path.join(SNAPSHOT_IMAGES_FOLDER, entry);
-        data += ('<a href="' + imageUrl + '"><img width="1024" src="' + imageUrl + '"></a><br>');
+        data += ('<a href="/play?c=' + camera + '&t=' + timestamp + '"><img width="1024" src="' + imageUrl + '"></a><br>');
     });
     data += '</p></body></html>';
 

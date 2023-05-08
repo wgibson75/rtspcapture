@@ -1,6 +1,7 @@
 {
     "capture_dir"            : "/media/data/",
     "doc_root_dir"           : "/var/www/html/",
+    "video_dir"              : "cctv",
     "snapshots_dir"          : "snapshots",
     "logs_dir"               : "/var/www/html/logs",
     "capture_log_file"       : "capture.log",
