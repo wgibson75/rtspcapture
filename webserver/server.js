@@ -123,12 +123,13 @@ function requestHandler_snapshot(request, response, next) {
     logger.info('requestHandler_snapshot');
     response.end();
 
+    let name = request.query.n;
     let cameras = typeof request.query.c == 'string' ? [request.query.c] : request.query.c;
     let timestamp = getTimestampNow();
 
     checkSnapshotDirsExist();
 
-    if (!cameras) { return; }
+    if (!name || !cameras) { return; }
 
     let snapshots = new Array();
 
@@ -143,7 +144,7 @@ function requestHandler_snapshot(request, response, next) {
 
     if (snapshots.length == 0) { return; }
 
-    createSnapshotSummary(timestamp, snapshots);
+    createSnapshotSummary(name, timestamp, snapshots);
 }
 
 function requestHandler_playVideo(request, response, next) {
@@ -376,7 +377,7 @@ function takeSnapshot(camera, timestamp) {
     return path.basename(snapshotFile);
 }
 
-function createSnapshotSummary(timestamp, images) {
+function createSnapshotSummary(name, timestamp, images) {
     let data = '<html><head>';
     data += '<link rel="stylesheet" href="/server.css">';
     data += '</head><body><p>';
@@ -390,7 +391,7 @@ function createSnapshotSummary(timestamp, images) {
     });
     data += '</p></body></html>';
 
-    let summaryFile = path.join(SNAPSHOT_PATH, util.format('%s.html', timestamp));
+    let summaryFile = path.join(SNAPSHOT_PATH, util.format('%s_%s.html', name, timestamp));
     logger.info('Creating: ' + summaryFile);
     fs.writeFileSync(summaryFile, data);
 
