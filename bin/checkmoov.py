@@ -59,7 +59,7 @@ class CaptureConfig:
 
     def getLogFile(self):
         try:
-            return self.data['checkmoov_log_file']
+            return os.path.join(self.data['logs_dir'], self.data['checkmoov_log_file'])
         except KeyError:
             sys.exit('Unable to read capture configuration.')
 
@@ -209,12 +209,13 @@ def main():
     args = parser.parse_args()
 
     config = CaptureConfig(args.config_file)
+    log_file = config.getLogFile()
 
     try:
         logging.basicConfig(
           handlers=[
             RotatingFileHandler(
-              os.path.join(os.path.dirname(os.path.realpath(__file__)), config.getLogFile()),
+              log_file,
               maxBytes=LOG_MAX_BYTES,
               backupCount=LOG_BACKUP_COUNT
             )
@@ -223,7 +224,7 @@ def main():
           format='%(asctime)s %(message)s'
         )
     except PermissionError:
-        print('Cannot open log file. Logging is disabled.')
+        print('Cannot open log file (%s). Logging is disabled.' % log_file)
 
     logging.info('Starting...')
 
