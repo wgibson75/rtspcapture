@@ -65,7 +65,7 @@ class CaptureConfig:
 
 class CheckCamera:
     __MARKER_FILENAME = '.moov_check'
-    __CMD_CHECK_MOOV = 'ffmpeg -v trace -i %s 2>&1 | grep "moov atom not found"'
+    __CMD_CHECK_MOOV = 'ffmpeg -v trace -i %s 2>&1 | egrep -i "moov atom not found|invalid"'
     __CMD_FIX_MOOV = 'untrunc-anthwlock %s %s'
     __CMD_FASTSTART = 'ffmpeg -i %s -c:a copy -c:v copy -movflags faststart %s'
     __MOOV_FIX_FILENAME = '%s_fixed.mp4'
