@@ -1,24 +1,31 @@
-const os      = require('os');
-const path    = require('path');
-const url     = require('url');
-const fs      = require('graceful-fs');
-const mime    = require('mime-types');
-const express = require('express');
-const spawn   = require('child_process').spawn;
-const util    = require('util');
+const os       = require('os');
+const path     = require('path');
+const url      = require('url');
+const fs       = require('graceful-fs');
+const mime     = require('mime-types');
+const express  = require('express');
+const spawn    = require('child_process').spawn;
+const execSync = require('child_process').execSync
+const util     = require('util');
 
-const DEFAULT_SERVER_PORT  = 8080;                    // Default HTTP listening port
-const CONFIG_FILE          = '/usr/local/bin/config.json';
-const EXCLUDED_FILES       = [ 'init.mp4' ];          // Filenames to exclude in directory listings
-const EXCLUDED_EXTS        = [ '.m4s', '.css' ];      // Extentions of files to exclude in directory listings
-const MAX_NUM_SNAPSHOTS    = 100;                     // Maximum number of snapshots (oldest will be deleted)
-const VIDEO_EXT            = 'mp4'                    // Video file extension
+const DEFAULT_SERVER_PORT  = 8080;                          // Default HTTP listening port
+const CONFIG_FILE          = '/usr/local/bin/config.json';  // JSON configuration file
+const EXCLUDED_FILES       = [ 'init.mp4', '.moov_check' ]; // Filenames to exclude in directory listings
+const EXCLUDED_EXTS        = [ '.m4s', '.css' ];            // Extentions of files to exclude in directory listings
+const MAX_NUM_SNAPSHOTS    = 100;                           // Maximum number of snapshots (oldest will be deleted)
+const VIDEO_EXT            = 'mp4'                          // Video file extension
 
 // FFMPEG command for taking a snapshot image from camera
 //
 // Arguments: Username, Password, IP address, Port, Stream URL, Output JPEG file
 //
 const SNAPSHOT_CMD = 'ffmpeg -rtsp_transport tcp -skip_frame nokey -y -i rtsp://%s:%s@%s:%s%s -vframes 1 %s'
+
+// FFPROBE command for getting video file duration
+//
+// Arguments: MPEG video file
+//
+const FFPROBE_DURATION_CMD = 'ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 %s'
 
 // Read the configuration
 const CONFIG        = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
@@ -151,15 +158,23 @@ function requestHandler_playVideo(request, response, next) {
     let camera = request.query.c;
     let timestamp = request.query.t;
 
-    let playbackFile = findVideoFile(camera, timestamp);
+    logger.info('requestHandler_playVideo: camera=' + camera + ', timestamp=' + timestamp);
 
     response.write('<html>');
     response.write('<body style="background-color: black; margin: 0; height: 100%">');
-    response.write('<script>');
-    response.write('document.writeln("<video width=\'" + window.innerWidth + "\' src=\'' +
-                   playbackFile[0] + '#t=' + playbackFile[1] +
-                   '\' autoplay playsinline controls></video>")');
-    response.write('</script>')/
+
+    let playbackFile = findVideoFile(camera, timestamp);
+
+    if (playbackFile) {
+        response.write('<script>');
+        response.write('document.writeln("<video width=\'" + window.innerWidth + "\' src=\'' +
+                                         playbackFile[0] + '#t=' + playbackFile[1] +
+                                         '\' autoplay playsinline controls></video>")');
+        response.write('</script>');
+    }
+    else {
+        response.write('<p>Video file not found</p>');
+    }
     response.write('</body></html>');
     response.end();
 }
@@ -254,6 +269,27 @@ function handleContent_media(request, filePath, response) {
 ////// Utilities //////
 ///////////////////////
 
+function runCommandSync(cmd) {
+    let result = undefined;
+    logger.info('Running command: ' + cmd);
+    try {
+        result = execSync(cmd);
+    }
+    catch(error) {
+        logger.error(error.stderr.toString());
+    }
+    return result;
+}
+
+function getVideoFileDurationMs(videoFile) {
+    let duration = 0;
+    let cmd = util.format(FFPROBE_DURATION_CMD, videoFile);
+    let output = runCommandSync(cmd);
+
+    if (output) duration = parseFloat(output) * 1000;
+    return duration;
+}
+
 function findVideoFile(camera, timestamp) {
     let cameraDir = path.join(CONFIG.capture_dir, camera);
 
@@ -279,17 +315,36 @@ function findVideoFile(camera, timestamp) {
 
     let sortedFiles = sortFilesByDate(files);
 
+    // Walk through all videos in reverse chronological order by last modified date
     for (let i = 0; i < sortedFiles.length; i++) {
         let fstat = sortedFiles[i][1];
 
-        if (fstat.birthtime.getTime() <= timestamp) {
-            logger.info(sortedFiles[i][0]);
-            let startTime = timestamp - fstat.birthtime.getTime();
-            return [path.join(CONFIG.video_dir, camera, sortedFiles[i][0]), Math.round(startTime/1000)];
+        if (fstat.mtime.getTime() < timestamp) {
+            if (i == 0) return;
+
+            // Take the previous video file as this must have our timestamp
+			let [filename, filestat] = sortedFiles[i - 1];
+
+            logger.info('timestamp ' + timestamp + ' must be in ' + filename);
+
+            let filepath = path.join(cameraDir, filename);
+            let duration = getVideoFileDurationMs(filepath);
+
+            logger.info('duration of video is ' + duration + 'ms');
+
+            if (duration == 0) return;
+
+            // Calculate the playback position based on the last modified time
+            // being roughly the same as the timestamp at the end of the video
+            let videoStartTime = filestat.mtime - duration;
+            let playbackTime = timestamp - videoStartTime;
+
+            logger.info('Playback position is ' + playbackTime + 'ms');
+
+            return [path.join(CONFIG.video_dir, camera, filename), Math.round(playbackTime/1000)];
             break;
         }
     }
-    return null;
 }
 
 function deleteSnapshot(filename) {
@@ -412,7 +467,7 @@ function getSizeString(s) {
 function sortFilesByDate(fitems) {
     let sortedFiles = fitems.sort((a, b) => {
         let aStat = a[1], bStat = b[1];
-        return new Date(bStat.birthtime).getTime() - new Date(aStat.birthtime).getTime();
+        return new Date(bStat.mtime).getTime() - new Date(aStat.mtime).getTime();
     });
     return sortedFiles;
 }
