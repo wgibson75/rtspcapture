@@ -1,19 +1,20 @@
-const os       = require('os');
-const path     = require('path');
-const url      = require('url');
-const fs       = require('graceful-fs');
-const mime     = require('mime-types');
-const express  = require('express');
-const spawn    = require('child_process').spawn;
-const execSync = require('child_process').execSync
-const util     = require('util');
+const os           = require('os');
+const path         = require('path');
+const url          = require('url');
+const fs           = require('graceful-fs');
+const mime         = require('mime-types');
+const express      = require('express');
+const spawn        = require('child_process').spawn;
+const execSync     = require('child_process').execSync
+const util         = require('util');
 
 const DEFAULT_SERVER_PORT  = 8080;                          // Default HTTP listening port
 const CONFIG_FILE          = '/usr/local/bin/config.json';  // JSON configuration file
 const EXCLUDED_FILES       = [ 'init.mp4', '.moov_check' ]; // Filenames to exclude in directory listings
-const EXCLUDED_EXTS        = [ '.m4s', '.css' ];            // Extentions of files to exclude in directory listings
+const EXCLUDED_EXTS        = [ '.m4s', '.css', '.json' ];   // Extentions of files to exclude in directory listings
 const MAX_NUM_SNAPSHOTS    = 100;                           // Maximum number of snapshots (oldest will be deleted)
 const VIDEO_EXT            = 'mp4'                          // Video file extension
+const LOG_FILE             = 'cctvserver-%DATE%.log'        // Log filename
 
 // FFMPEG command for taking a snapshot image from camera
 //
@@ -65,10 +66,18 @@ const logFormat = printf(({ level, message, timestamp }) => {
   return `${timestamp} [${level}] ${message}`;
 });
 
+const now = new Date();
 const logger = createLogger({
   level: 'info',
   format: combine(splat(), timestamp(), logFormat),
-  transports: [ new transports.Console() ]
+  transports: [
+      new transports.Console(),
+      new (require('winston-daily-rotate-file'))({
+          filename: path.join(CONFIG.logs_dir, LOG_FILE),
+          datePattern: 'yyyy-MM-DD',
+          maxFiles: '7d'
+      })
+  ]
 });
 
 //////////////////////////////
@@ -161,7 +170,7 @@ function requestHandler_playVideo(request, response, next) {
     logger.info('requestHandler_playVideo: camera=' + camera + ', timestamp=' + timestamp);
 
     response.write('<html>');
-    response.write('<body style="background-color: black; margin: 0; height: 100%">');
+    response.write('<body style="background-color: black; color: #999933; margin: 0; height: 100%">');
 
     let playbackFile = findVideoFile(camera, timestamp);
 
@@ -173,7 +182,7 @@ function requestHandler_playVideo(request, response, next) {
         response.write('</script>');
     }
     else {
-        response.write('<p>Video file not found</p>');
+        response.write('<p>Video unavailable</p>');
     }
     response.write('</body></html>');
     response.end();
@@ -338,6 +347,8 @@ function findVideoFile(camera, timestamp) {
             // being roughly the same as the timestamp at the end of the video
             let videoStartTime = filestat.mtime - duration;
             let playbackTime = timestamp - videoStartTime;
+
+            if (videoStartTime > timestamp) return;
 
             logger.info('Playback position is ' + playbackTime + 'ms');
 
