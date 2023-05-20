@@ -444,18 +444,24 @@ function takeSnapshot(camera, timestamp) {
 }
 
 function createSnapshotSummary(name, timestamp, images) {
-    let data = '<html><head>';
-    data += '<link rel="stylesheet" href="/server.css">';
-    data += '</head><body><p>';
+    let data = '<html>';
+    data += '<head><title>Video Snapshot</title></head>';
+    data += '<body style="background-color: black; margin: 0; height: 100%">';
+    data += '<div style="font-size: 0">';
+    data += '<script>';
 
     images.forEach((entry, i) => {
         let match = entry.match(/^(\d+)_(.*?)\.jpg$/);
         let timestamp = match[1];
         let camera = match[2];
         let imageUrl = path.join(SNAPSHOT_IMAGES_FOLDER, entry);
-        data += ('<a href="/play?c=' + camera + '&t=' + timestamp + '"><img width="1024" src="' + imageUrl + '"></a><br>');
+        data += ('document.writeln(\'<a href="/play?c=' + camera + '&t=' + timestamp + '"><img width="\' + window.innerWidth + \'" src="' + imageUrl + '"></a><br>\');');
     });
-    data += '</p></body></html>';
+
+    data += '</script>';
+    data += '</div>';
+    data += '</body>';
+    data += '</html>';
 
     let summaryFile = path.join(SNAPSHOT_PATH, util.format('%s_%s.html', name, timestamp));
     logger.info('Creating: ' + summaryFile);
