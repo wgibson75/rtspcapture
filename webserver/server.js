@@ -455,7 +455,10 @@ function createSnapshotSummary(name, timestamp, images) {
         let timestamp = match[1];
         let camera = match[2];
         let imageUrl = path.join(SNAPSHOT_IMAGES_FOLDER, entry);
-        data += ('document.writeln(\'<a href="/play?c=' + camera + '&t=' + timestamp + '"><img width="\' + window.innerWidth + \'" src="' + imageUrl + '"></a><br>\');');
+        let imageTag = images.length > 1
+            ? '<img width="\' + Math.floor(window.innerWidth / 2) + \'" src="' + imageUrl + '">'
+            : '<img width="\' + window.innerWidth + \'" src="' + imageUrl + '">'
+        data += ('document.writeln(\'<a href="/play?c=' + camera + '&t=' + timestamp + '">' + imageTag + '</a>\');');
     });
 
     data += '</script>';
