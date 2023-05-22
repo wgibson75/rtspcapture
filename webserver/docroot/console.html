@@ -3,16 +3,16 @@
 <body style="background-color: black; margin: 0; height: 100%">
 <div style="font-size: 0">
 <script>
-//const baseUrl = 'http://pluto.local:8080';
-const baseUrl = '';
+const baseUrl = ''; // Set to temporary server address and port
 const videosPerLine = 4;
-const videoWidth = (window.innerWidth / videosPerLine);
+const videoWidth = Math.floor(window.innerWidth / videosPerLine);
 
 const cameras = [
     'shed',
     'shed_door',
     'side_of_shed',
     'side_of_shed_2',
+    'side_of_potting_shed',
     'footpath',
     'potting_shed',
     'potting_shed_2',
