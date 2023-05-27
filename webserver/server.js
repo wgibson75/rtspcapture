@@ -12,7 +12,6 @@ const DEFAULT_SERVER_PORT  = 8080;                          // Default HTTP list
 const CONFIG_FILE          = '/usr/local/bin/config.json';  // JSON configuration file
 const EXCLUDED_FILES       = [ 'init.mp4', '.moov_check' ]; // Filenames to exclude in directory listings
 const EXCLUDED_EXTS        = [ '.m4s', '.css', '.json' ];   // Extentions of files to exclude in directory listings
-const MAX_NUM_SNAPSHOTS    = 100;                           // Maximum number of snapshots (oldest will be deleted)
 const VIDEO_EXT            = 'mp4'                          // Video file extension
 const LOG_FILE             = 'cctvserver-%DATE%.log'        // Log filename
 
@@ -387,9 +386,9 @@ function enforceMaxSnapshots() {
         files.push(fitem);
     });
 
-    if (files.length > MAX_NUM_SNAPSHOTS) {
+    if (files.length > CONFIG.max_num_snapshots) {
         let sortedFiles = sortFilesByDate(files);
-        let deleteFiles = sortedFiles.slice(MAX_NUM_SNAPSHOTS);
+        let deleteFiles = sortedFiles.slice(CONFIG.max_num_snapshots);
 
         deleteFiles.forEach((entry, i) => {
             deleteSnapshot(entry[0]);

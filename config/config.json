@@ -6,6 +6,7 @@
     "logs_dir"               : "/var/www/html/logs",
     "capture_log_file"       : "capture.log",
     "checkmoov_log_file"     : "checkmoov.log",
+    "max_num_snapshots"      : 1000,
     "log_backup_count"       : 2,
     "log_max_bytes"          : 250000,
     "startup_delay_secs"     : 10,
