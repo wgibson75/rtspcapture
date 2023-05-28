@@ -8,12 +8,12 @@ const spawn        = require('child_process').spawn;
 const execSync     = require('child_process').execSync
 const util         = require('util');
 
-const DEFAULT_SERVER_PORT  = 8080;                          // Default HTTP listening port
-const CONFIG_FILE          = '/usr/local/bin/config.json';  // JSON configuration file
-const EXCLUDED_FILES       = [ 'init.mp4', '.moov_check' ]; // Filenames to exclude in directory listings
-const EXCLUDED_EXTS        = [ '.m4s', '.css', '.json' ];   // Extentions of files to exclude in directory listings
-const VIDEO_EXT            = 'mp4'                          // Video file extension
-const LOG_FILE             = 'cctvserver-%DATE%.log'        // Log filename
+const DEFAULT_SERVER_PORT    = 8080;                          // Default HTTP listening port
+const EXCLUDED_FILES         = [ 'init.mp4', '.moov_check' ]; // Filenames to exclude in directory listings
+const EXCLUDED_EXTS          = [ '.m4s', '.css', '.json' ];   // Extentions of files to exclude in directory listings
+const VIDEO_EXT              = 'mp4'                          // Video file extension
+const LOG_FILE               = 'cctvserver-%DATE%.log'        // Log filename
+const SNAPSHOT_IMAGES_FOLDER = 'images';                      // Snapshot images folder name
 
 // FFMPEG command for taking a snapshot image from camera
 //
@@ -26,19 +26,6 @@ const SNAPSHOT_CMD = 'ffmpeg -rtsp_transport tcp -skip_frame nokey -y -i rtsp://
 // Arguments: MPEG video file
 //
 const FFPROBE_DURATION_CMD = 'ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 %s'
-
-// Read the configuration
-const CONFIG        = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
-const CAMERA_CONFIG = {};
-
-// Build lookup for camera configuration
-CONFIG.cameras.forEach((cam, i) => {
-    CAMERA_CONFIG[cam.name] = cam;
-});
-
-const SNAPSHOT_IMAGES_FOLDER = 'images';
-const SNAPSHOT_PATH          = path.join(CONFIG.doc_root_dir, CONFIG.snapshots_dir);
-const SNAPSHOT_IMAGES_PATH   = path.join(SNAPSHOT_PATH, SNAPSHOT_IMAGES_FOLDER);
 
 ///////////////////////////////////
 ////// Excluded file lookups //////
@@ -55,29 +42,56 @@ EXCLUDED_EXTS.forEach((x) => {
 });
 
 ///////////////////////////
+////// Configuration //////
+///////////////////////////
+
+let CONFIG;
+let CAMERA_CONFIG = {};
+let SNAPSHOT_PATH;
+let SNAPSHOT_IMAGES_PATH;
+
+function load_config(config_file) {
+    // Load the configuration file
+    CONFIG = JSON.parse(fs.readFileSync(config_file, 'utf8'));
+
+    // Build lookup for camera configuration
+    CONFIG.cameras.forEach((cam, i) => {
+        CAMERA_CONFIG[cam.name] = cam;
+    });
+
+    // Setup snapshot paths
+    SNAPSHOT_PATH = path.join(CONFIG.doc_root_dir, CONFIG.snapshots_dir);
+    SNAPSHOT_IMAGES_PATH = path.join(SNAPSHOT_PATH, SNAPSHOT_IMAGES_FOLDER);
+}
+
+///////////////////////////
 ////// Setup logging //////
 ///////////////////////////
 
-const { createLogger, format, transports } = require('winston');
-const { combine, printf, timestamp, splat } = format;
+let LOGGER;
 
-const logFormat = printf(({ level, message, timestamp }) => {
-  return `${timestamp} [${level}] ${message}`;
-});
+function create_logger() {
+    let { createLogger, format, transports } = require('winston');
+    let { combine, printf, timestamp, splat } = format;
 
-const now = new Date();
-const logger = createLogger({
-  level: 'info',
-  format: combine(splat(), timestamp(), logFormat),
-  transports: [
-      new transports.Console(),
-      new (require('winston-daily-rotate-file'))({
-          filename: path.join(CONFIG.logs_dir, LOG_FILE),
-          datePattern: 'yyyy-MM-DD',
-          maxFiles: '7d'
-      })
-  ]
-});
+    let logFormat = printf(({ level, message, timestamp }) => {
+      return `${timestamp} [${level}] ${message}`;
+    });
+
+    let now = new Date();
+    LOGGER = createLogger({
+      level: 'info',
+      format: combine(splat(), timestamp(), logFormat),
+      transports: [
+          new transports.Console(),
+          new (require('winston-daily-rotate-file'))({
+              filename: path.join(CONFIG.logs_dir, LOG_FILE),
+              datePattern: 'yyyy-MM-DD',
+              maxFiles: '7d'
+          })
+      ]
+    });
+}
 
 //////////////////////////////
 ////// Start the server //////
@@ -86,12 +100,17 @@ const logger = createLogger({
 main();
 
 function main() {
-    const app  = express();
-    const port = isNaN(process.argv[2]) ? DEFAULT_SERVER_PORT : process.argv[2];
+    let app         = express();
+    let config_file = process.argv[2];
+    let port        = isNaN(process.argv[3]) ? DEFAULT_SERVER_PORT : process.argv[3];
+
+    load_config(config_file);
+
+    create_logger()
 
     // Route handlers - processed in order
     //
-    const requestHandlers = [
+    let requestHandlers = [
         [ /^.*$/,           requestHandler_log        ], // Log the HTTP request
         [ /^\/server.css$/, requestHandler_stylesheet ], // CSS for directory listings
         [ /^\/snapshot$/,   requestHandler_snapshot   ], // Take a snapshot
@@ -104,12 +123,12 @@ function main() {
     });
 
     app.listen(port, () => {
-        const ips = getHostIpList();
+        let ips = getHostIpList();
 
         if (ips.length == 0)
-            logger.info('No network interfaces');
+            LOGGER.info('No network interfaces');
         else
-            for (i in ips) logger.info('Listening on: http://%s:%s', ips[i], port);
+            for (i in ips) LOGGER.info('Listening on: http://%s:%s', ips[i], port);
     });
 }
 
@@ -118,12 +137,12 @@ function main() {
 //////////////////////////////////
 
 function requestHandler_log(request, response, next) {
-    logger.info('%s %s', request.method, request.url);
+    LOGGER.info('%s %s', request.method, request.url);
     next(); // Call the next matching handler
 }
 
 function requestHandler_stylesheet(request, response, next) {
-    logger.info('requestHandler_stylesheet');
+    LOGGER.info('requestHandler_stylesheet');
     let stylesheet = getLocalPath(request.url);
     if (!fs.existsSync(stylesheet)) return response.sendStatus(404);
 
@@ -135,7 +154,7 @@ function requestHandler_stylesheet(request, response, next) {
 }
 
 function requestHandler_snapshot(request, response, next) {
-    logger.info('requestHandler_snapshot');
+    LOGGER.info('requestHandler_snapshot');
     response.end();
 
     let name = request.query.n;
@@ -150,7 +169,7 @@ function requestHandler_snapshot(request, response, next) {
 
     cameras.forEach((cam, i) => {
         if (!(cam in CAMERA_CONFIG)) {
-            logger.info('No such camera: ' + cam);
+            LOGGER.info('No such camera: ' + cam);
             return;
         }
         let image = takeSnapshot(cam, timestamp);
@@ -166,7 +185,7 @@ function requestHandler_playVideo(request, response, next) {
     let camera = request.query.c;
     let timestamp = request.query.t;
 
-    logger.info('requestHandler_playVideo: camera=' + camera + ', timestamp=' + timestamp);
+    LOGGER.info('requestHandler_playVideo: camera=' + camera + ', timestamp=' + timestamp);
 
     response.write('<html>');
     response.write('<body style="background-color: black; color: #999933; margin: 0; height: 100%">');
@@ -188,18 +207,18 @@ function requestHandler_playVideo(request, response, next) {
 }
 
 function requestHandler_content(request, response, next) {
-    logger.info('requestHandler_content');
+    LOGGER.info('requestHandler_content');
     let requestUrl = request.url.replace(/(\/)\/+/g, '$1');
     let filePath = getLocalPath(requestUrl);
 
     if (!fs.existsSync(filePath)) return response.sendStatus(404);
 
     if (fs.statSync(filePath).isDirectory()) {
-        logger.info('Directory listing: ' + filePath);
+        LOGGER.info('Directory listing: ' + filePath);
         handleContent_dirListing(requestUrl, filePath, response);
     }
     else {
-        logger.info('Media request: ' + filePath);
+        LOGGER.info('Media request: ' + filePath);
         handleContent_media(request, filePath, response);
     }
 }
@@ -209,7 +228,7 @@ function requestHandler_content(request, response, next) {
 //////////////////////////////
 
 function handleContent_dirListing(requestUrl, filePath, response) {
-    const files = getFiles(filePath);
+    let files = getFiles(filePath);
 
     response.write('<html><head>');
     response.write('<link rel="stylesheet" href="/server.css">');
@@ -235,9 +254,9 @@ function handleContent_dirListing(requestUrl, filePath, response) {
 }
 
 function handleContent_media(request, filePath, response) {
-    const fileStat = fs.statSync(filePath);
-    const fileSize  = fileStat.size;
-    const range     = request.range(fileSize);
+    let fileStat = fs.statSync(filePath);
+    let fileSize  = fileStat.size;
+    let range     = request.range(fileSize);
 
     let contentType = mime.lookup(request.url);
     if (!contentType) contentType = 'text/plain'; // Default response to plain text
@@ -245,11 +264,11 @@ function handleContent_media(request, filePath, response) {
     // If we need to provide a partial response (i.e. a chunk)
     if (range) {
         // Only look at the first byte range requested
-        const start  = range[0].start;
-        const end    = range[0].end;
-        const length = end - start + 1;
+        let start  = range[0].start;
+        let end    = range[0].end;
+        let length = end - start + 1;
 
-        logger.info('Serving partial response: size=%d, bytes=%d-%d)', length, start, end);
+        LOGGER.info('Serving partial response: size=%d, bytes=%d-%d)', length, start, end);
 
         response.writeHead(206, {
             'Content-Range'  : `bytes ${start}-${end}/${fileSize}`,
@@ -267,7 +286,7 @@ function handleContent_media(request, filePath, response) {
             'Content-Type'   : contentType
         });
 
-        logger.info('Serving complete response: size=%d', fileSize);
+        LOGGER.info('Serving complete response: size=%d', fileSize);
 
         fs.createReadStream(filePath).pipe(response);
     }
@@ -279,12 +298,12 @@ function handleContent_media(request, filePath, response) {
 
 function runCommandSync(cmd) {
     let result = undefined;
-    logger.info('Running command: ' + cmd);
+    LOGGER.info('Running command: ' + cmd);
     try {
         result = execSync(cmd);
     }
     catch(error) {
-        logger.error(error.stderr.toString());
+        LOGGER.error(error.stderr.toString());
     }
     return result;
 }
@@ -302,7 +321,7 @@ function findVideoFile(camera, timestamp) {
     let cameraDir = path.join(CONFIG.capture_dir, camera);
 
     if (!fs.existsSync(cameraDir)) {
-        logger.error('Directory does not exist: ' + cameraDir);
+        LOGGER.error('Directory does not exist: ' + cameraDir);
         return;
     }
 
@@ -317,7 +336,7 @@ function findVideoFile(camera, timestamp) {
     });
 
     if (files.length == 0) {
-        logger.error('No video files in: ' + cameraDir);
+        LOGGER.error('No video files in: ' + cameraDir);
         return;
     }
 
@@ -333,12 +352,12 @@ function findVideoFile(camera, timestamp) {
             // Take the previous video file as this must have our timestamp
 			let [filename, filestat] = sortedFiles[i - 1];
 
-            logger.info('timestamp ' + timestamp + ' must be in ' + filename);
+            LOGGER.info('timestamp ' + timestamp + ' must be in ' + filename);
 
             let filepath = path.join(cameraDir, filename);
             let duration = getVideoFileDurationMs(filepath);
 
-            logger.info('duration of video is ' + duration + 'ms');
+            LOGGER.info('duration of video is ' + duration + 'ms');
 
             if (duration == 0) return;
 
@@ -349,7 +368,7 @@ function findVideoFile(camera, timestamp) {
 
             if (videoStartTime > timestamp) return;
 
-            logger.info('Playback position is ' + playbackTime + 'ms');
+            LOGGER.info('Playback position is ' + playbackTime + 'ms');
 
             return [path.join(CONFIG.video_dir, camera, filename), Math.round(playbackTime/1000)];
             break;
@@ -359,7 +378,7 @@ function findVideoFile(camera, timestamp) {
 
 function deleteSnapshot(filename) {
     let summaryPath = path.join(SNAPSHOT_PATH, filename);
-    logger.info('Deleting: ' + summaryPath);
+    LOGGER.info('Deleting: ' + summaryPath);
     fs.unlinkSync(summaryPath);
 
     let snapshotId = filename.replace(/^([0-9]+).*$/, "$1");
@@ -368,7 +387,7 @@ function deleteSnapshot(filename) {
     fs.readdirSync(SNAPSHOT_IMAGES_PATH).forEach((filename) => {
         if (filename.match(imageRegex)) {
             let imagePath = path.join(SNAPSHOT_IMAGES_PATH, filename);
-            logger.info('Deleting: ' + imagePath);
+            LOGGER.info('Deleting: ' + imagePath);
             fs.unlinkSync(imagePath);
         }
     })
@@ -429,14 +448,14 @@ function takeSnapshot(camera, timestamp) {
     let args = cmd.split(' ');
     let exec = args.shift();
 
-    logger.info('Taking snapshot: ' + snapshotFile);
+    LOGGER.info('Taking snapshot: ' + snapshotFile);
     let cmdSpawn = spawn(exec, args, {
         detached: true
     });
 
     cmdSpawn.on('close', (code, signal) => {
         if (code == 0) return;
-        logger.info('Snapshot failed: ' + camera);
+        LOGGER.info('Snapshot failed: ' + camera);
     });
 
     return path.basename(snapshotFile);
@@ -466,7 +485,7 @@ function createSnapshotSummary(name, timestamp, images) {
     data += '</html>';
 
     let summaryFile = path.join(SNAPSHOT_PATH, util.format('%s_%s.html', name, timestamp));
-    logger.info('Creating: ' + summaryFile);
+    LOGGER.info('Creating: ' + summaryFile);
     fs.writeFileSync(summaryFile, data);
 
     enforceMaxSnapshots();
