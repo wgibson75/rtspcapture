@@ -296,11 +296,15 @@ def health_check(cc_list):
     for cc in cc_list:
         cc.health_check()
 
-def configure_logging(log_file, log_max_bytes, log_backup_count):
+def configure_logging(log_file, log_dir, log_max_bytes, log_backup_count):
     logger.setLevel(logging.DEBUG)
 
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+    log_path = os.path.join(log_dir, log_file)
+
     handler = RotatingFileHandler(
-        os.path.join(os.path.dirname(os.path.realpath(__file__)), log_file),
+        log_path,
         maxBytes=log_max_bytes,
         backupCount=log_backup_count
     )
@@ -318,7 +322,7 @@ def capture_from_cameras(config_file):
     update_dead_time_secs = config.time_must_be_dead_secs
     onvif_wsdl_defs = config.onvif_wsdl_defs
 
-    configure_logging(config.capture_log_file, config.log_max_bytes, config.log_backup_count)
+    configure_logging(config.capture_log_file, config.logs_dir, config.log_max_bytes, config.log_backup_count)
 
     logger.info('Waiting for %d seconds before starting...' % config.startup_delay_secs)
     time.sleep(config.startup_delay_secs)
