@@ -318,7 +318,7 @@ def capture_from_cameras(config_file):
     update_dead_time_secs = config.time_must_be_dead_secs
     onvif_wsdl_defs = config.onvif_wsdl_defs
 
-    configure_logging(config.log_file, config.log_max_bytes, config.log_backup_count)
+    configure_logging(config.capture_log_file, config.log_max_bytes, config.log_backup_count)
 
     logger.info('Waiting for %d seconds before starting...' % config.startup_delay_secs)
     time.sleep(config.startup_delay_secs)
