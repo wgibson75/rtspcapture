@@ -173,7 +173,14 @@ function requestHandler_snapshot(request, response, next) {
             return;
         }
         let image = takeSnapshot(cam, timestamp);
-        snapshots.push(image);
+
+        let activeRecAndPos = getActiveRecordingAndPosition(cam, timestamp);
+        if (!activeRecAndPos) { return; } // Skip this camera if no active recording
+
+        let [recording, position] = activeRecAndPos;
+
+        // Push a tuple of snapshot image URL, recording URL and playback position
+        snapshots.push([image, recording, position]);
     });
 
     if (snapshots.length == 0) { return; }
@@ -315,6 +322,45 @@ function getVideoFileDurationMs(videoFile) {
 
     if (output) duration = parseFloat(output) * 1000;
     return duration;
+}
+
+function getActiveRecordingAndPosition(camera, timestampNow) {
+    let cameraDir = path.join(CONFIG.capture_dir, camera);
+
+    if (!fs.existsSync(cameraDir)) {
+        LOGGER.error('Directory does not exist: ' + cameraDir);
+        return;
+    }
+
+    let files = [];
+    let regex = new RegExp('.*\.' + VIDEO_EXT);
+    fs.readdirSync(cameraDir).forEach((filename) => {
+        if (!filename.match(regex)) {
+            return;
+        }
+        let fstat = fs.statSync(cameraDir + '/' + filename);
+        files.push([filename, fstat]);
+    });
+
+    if (files.length == 0) {
+        LOGGER.error('No video files in: ' + cameraDir);
+        return;
+    }
+
+    let sortedFiles  = sortFilesByDate(files);
+    let [activeFile, previousFile] = sortedFiles.slice(0, 2);
+    let position = 0; // Report zero position if cannot determine position
+
+    // Determine the current position using the last
+    // modified time of the previous video file
+    if (previousFile) {
+        let fstat = previousFile[1];
+        // Report position in seconds
+        position = Math.floor((timestampNow - fstat.mtime.getTime()) / 1000);
+    }
+    let recordingUrl = path.join('/', CONFIG.video_dir, camera, activeFile[0]);
+
+    return [recordingUrl, position];
 }
 
 function findVideoFile(camera, timestamp) {
@@ -461,28 +507,63 @@ function takeSnapshot(camera, timestamp) {
     return path.basename(snapshotFile);
 }
 
-function createSnapshotSummary(name, timestamp, images) {
-    let data = '<html>';
-    data += '<head><title>Video Snapshot</title></head>';
-    data += '<body style="background-color: black; margin: 0; height: 100%">';
-    data += '<div style="font-size: 0">';
-    data += '<script>';
+function createSnapshotSummary(name, timestamp, snapshots) {
+    let data = `<html>
+    <head><title>Video Snapshot</title></head>
+    <body style="background-color: black; margin: 0; height: 100%" id="body">
+    <div style="font-size: 0" id="main">
+    <script>
+    function playVideo(url, positionSecs) {
+        let body = document.getElementById('body');
+        let main = document.getElementById('main');
 
-    images.forEach((entry, i) => {
-        let match = entry.match(/^(\d+)_(.*?)\.jpg$/);
-        let timestamp = match[1];
-        let camera = match[2];
-        let imageUrl = path.join(SNAPSHOT_IMAGES_FOLDER, entry);
-        let imageTag = images.length > 1
-            ? '<img width="\' + Math.floor(window.innerWidth / 2) + \'" src="' + imageUrl + '">'
-            : '<img width="\' + window.innerWidth + \'" src="' + imageUrl + '">'
-        data += ('document.writeln(\'<a href="/play?c=' + camera + '&t=' + timestamp + '">' + imageTag + '</a>\');');
+        let video = document.createElement('video');
+        video.setAttribute('width', window.innerWidth);
+        video.setAttribute('src', url + '#t=' + positionSecs);
+        video.setAttribute('autoplay', '');
+        video.setAttribute('playsinline', '');
+        video.setAttribute('controls', '');
+
+        body.replaceChild(video, main);
+        
+        // Have to delay setting the click handler otherwise it will
+        // fire instantly for the click that triggered this call
+        setTimeout(setClickHandler, 100);
+    }
+
+    function setClickHandler() {
+        document.addEventListener("click", onClickHandler);
+    }
+
+    function onClickHandler(e) {
+        let dWidth  = window.innerWidth * 2 / 3;
+        let dStartX = (window.innerWidth - dWidth) / 2;
+        let dHeight = window.innerHeight * 2 / 3;
+        let dStartY = (window.innerHeight - dHeight) / 2;
+
+        if (((e.clientX > dStartX) && (e.clientX < (dStartX + dWidth))) &&
+            ((e.clientY > dStartY) && (e.clientY < (dStartY + dHeight)))) {
+            location.reload();
+        }
+    }
+    \n`;
+
+    data += 'let imageWidth = ' + ((snapshots.length > 1) ? 'Math.floor(window.innerWidth / 2)' : 'window.innerWidth') + ';';
+
+    snapshots.forEach((entry, i) => {
+        let [imageFile, videoUrl, position] = entry;
+        let imageUrl = path.join(SNAPSHOT_IMAGES_FOLDER, imageFile);
+
+        data += `document.writeln('<a onclick="playVideo('
+            + "'${videoUrl}', ${position}"
+            + ')"><img src="${imageUrl}" width='
+            + imageWidth
+            + '></a>');\n`;
     });
 
-    data += '</script>';
-    data += '</div>';
-    data += '</body>';
-    data += '</html>';
+    data += `</script>
+    </div></body>
+    </html>`;
 
     let summaryFile = path.join(SNAPSHOT_PATH, util.format('%s_%s.html', name, timestamp));
     LOGGER.info('Creating: ' + summaryFile);
