@@ -536,13 +536,10 @@ function createSnapshotSummary(name, timestamp, snapshots) {
     }
 
     function onClickHandler(e) {
-        let dWidth  = window.innerWidth * 2 / 3;
-        let dStartX = (window.innerWidth - dWidth) / 2;
-        let dHeight = window.innerHeight * 2 / 3;
-        let dStartY = (window.innerHeight - dHeight) / 2;
+        let maxY = window.innerHeight * 0.25;
 
-        if (((e.clientX > dStartX) && (e.clientX < (dStartX + dWidth))) &&
-            ((e.clientY > dStartY) && (e.clientY < (dStartY + dHeight)))) {
+        // Only reload if clicked in top quarter of screen
+        if (e.clientY < maxY) {
             location.reload();
         }
     }
