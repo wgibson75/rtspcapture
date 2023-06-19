@@ -1,58 +1,23 @@
 #!/usr/bin/env python3
-import network
-import socket
 import time
 import machine
-
+from wlan_connection import Connection
 from machine import ADC, Pin
 
-WIRELESS_SSID = 'love NZ'
-WIRELESS_PSWD = 'monkeypoo'
-WIRELESS_TIMEOUT_SECS = 10
+WIRELESS_SSID = 'love NZ'   # Wireless LAN SSID
+WIRELESS_PSWD = '' # Wireless LAN password
 
-PHOTO_PIN = 26
-SERVER_NAME = 'pluto.local'
-SERVER_PORT = 8080
-SNAPSHOT_CMD = '/snapshot?n=driveway&c=front_of_house'
-MAX_SNAPSHOTS_BEFORE_RESET = 100 # Reset after this number of snapshots
-LIGHT_CHANGE_THRESHOLD = 10      # Percentage difference in light level that constitutes a change
-LIGHT_POLL_INTERVAL_MS = 300
-DEBOUNCE_TIME_MS = 10000
+# Snapshot request details
+SERVER_NAME   = 'pluto.local'
+SERVER_PORT   = 8080
+SNAPSHOT_ARGS = 'n=driveway&c=front_of_house'
+SNAPSHOT_CMD  = '/snapshot?%s' % SNAPSHOT_ARGS
 
-def connect_to_wlan():
-    wlan = network.WLAN(network.STA_IF)
-    wlan.active(True)
-    wlan.connect(WIRELESS_SSID, WIRELESS_PSWD)
-
-    wait = WIRELESS_TIMEOUT_SECS
-    while not wlan.isconnected() and wait > 0:
-        print('Connecting to wireless network...')
-        wait -= 1
-        time.sleep(1)
-
-    if wlan.isconnected():
-        status = wlan.ifconfig()
-        print('Connected. IP address is %s' % status[0])
-    else:
-        machine.reset() # Reset and hope for the best
-
-def take_snapshot():
-    reconnect = False
-    s = socket.socket()
-    try:
-        ai = socket.getaddrinfo(SERVER_NAME, SERVER_PORT)
-        addr = ai[0][-1]
-        print('Connecting to address: ', addr)
-        s.connect(addr)
-        print('Taking snapshot: %s' % SNAPSHOT_CMD)
-        s.send(b'GET %s HTTP/1.0\r\n\r\n' % SNAPSHOT_CMD)
-        print(s.recv(1024))
-    except Exception as e:
-        print('Failed to take snapshot: %s' % e)
-        reconnect = True
-    s.close() # Always close the socket
-    if reconnect:
-        connect_to_wlan()
+PHOTO_PIN                      = 26    # GPIO pin to detect light level
+LIGHT_CHANGE_THRESHOLD         = 10    # Percentage difference in light level that constitutes a change
+LIGHT_POLL_INTERVAL_MS         = 300   # Interval in milliseconds between light level polls
+DEBOUNCE_TIME_MS               = 10000 # Defines the period in milliseconds that must elapse before next trigger
+MAX_NUM_SNAPSHOTS_BEFORE_RESET = 100   # Reset the board after this number of snapshots
 
 # Get the percentage light change between two light values
 def get_light_change(level1, level2):
@@ -63,9 +28,11 @@ def get_light_change(level1, level2):
     else:
         return 0
 
-def detect_light_change():
+def detect_light_change(conn):
     last_level = None
     debounce_time = None
+    snapshot_count = 0
+
     while True:
         photo_res = ADC(Pin(PHOTO_PIN))
         light_reading = photo_res.read_u16()
@@ -76,7 +43,7 @@ def detect_light_change():
             time_now = time.ticks_ms()
             if ((time_now - debounce_time) > DEBOUNCE_TIME_MS) or (time_now < debounce_time):
                 debounce_time = None
-        
+
         if last_level:
             change = get_light_change(last_level, current_level)
             #print('percentage change: %.1f' % change)
@@ -86,13 +53,24 @@ def detect_light_change():
                 and debounce_time == None):
                 debounce_time = time.ticks_ms()
                 print('Lights on')
-                take_snapshot()
+                success = conn.request(SNAPSHOT_CMD) # Request a snapshot
+                if not success:
+                    conn.reconnect()
+                snapshot_count += 1
+                
+                if snapshot_count == MAX_NUM_SNAPSHOTS_BEFORE_RESET:
+                    print('Resetting after %d snapshots' % snapshot_count)
+                    machine.reset()
 
         last_level = current_level
         time.sleep_ms(LIGHT_POLL_INTERVAL_MS)
 
-# Connect to the wireless network
-connect_to_wlan()
+def main():
+    # Use snapshot arguments as the client ID
+    conn = Connection(WIRELESS_SSID, WIRELESS_PSWD, SERVER_NAME, SERVER_PORT, SNAPSHOT_ARGS)
+    conn.connect()
 
-# Listen for lights state change
-detect_light_change()
+    detect_light_change(conn)
+
+if __name__ == "__main__":
+    main()

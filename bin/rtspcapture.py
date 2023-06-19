@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3.10
 import argparse
 import os
 import sys
@@ -25,6 +25,7 @@ update_dead_time_secs = None
 class CommandProc:
     def __init__(self, cmd):
         self.cmd = cmd
+        logger.info('Invoking command: %s' % cmd)
         self.process = subprocess.Popen(self.cmd)
 
     def is_alive(self):
