@@ -14,6 +14,7 @@ const EXCLUDED_EXTS          = [ '.m4s', '.css', '.json' ];   // Extentions of f
 const VIDEO_EXT              = 'mp4'                          // Video file extension
 const LOG_FILE               = 'cctvserver-%DATE%.log'        // Log filename
 const SNAPSHOT_IMAGES_FOLDER = 'images';                      // Snapshot images folder name
+const SNAPSHOTS_FILE         = 'snapshots.json';              // Snapshots summary filename
 
 // FFMPEG command for taking a snapshot image from camera
 //
@@ -439,26 +440,42 @@ function deleteSnapshot(filename) {
     })
 }
 
-function enforceMaxSnapshots() {
+function getFilenamesSortedByDate(dirPath, ext) {
     let files = [];
-    fs.readdirSync(SNAPSHOT_PATH).forEach((filename) => {
-        let fstat = fs.statSync(SNAPSHOT_PATH + '/' + filename);
+    let regEx = undefined;
+
+    if (ext !== undefined) {
+        regEx = new RegExp('^.*\.' + ext + '$'); 
+    }
+
+    fs.readdirSync(dirPath).forEach((filename) => {
+        let fstat = fs.statSync(dirPath + '/' + filename);
         let fitem = [filename, fstat];
 
-        if ((filename.charAt() == '.') || (fstat.isDirectory())) {
+        if (fstat.isDirectory() ||                               // Ignore directories
+            ((regEx !== undefined) && (!regEx.test(filename)))) { // Ignore files that don't match extension
             return;
         }
+
         files.push(fitem);
     });
+    return sortFilesByDate(files).map((entry) => entry[0]);
+}
 
-    if (files.length > CONFIG.max_num_snapshots) {
-        let sortedFiles = sortFilesByDate(files);
-        let deleteFiles = sortedFiles.slice(CONFIG.max_num_snapshots);
+// This will also enforce maximum snapshots by deleting oldest snapshots
+function createSnapshotsFile() {
+    let files = getFilenamesSortedByDate(SNAPSHOT_PATH, 'html');
 
-        deleteFiles.forEach((entry, i) => {
-            deleteSnapshot(entry[0]);
-        });
+    while (files.length > CONFIG.max_num_snapshots) {
+        deleteSnapshot(files.pop());
     }
+
+    let data = {};
+    data.snapshots = files;
+
+    let jsonFile = path.join(SNAPSHOT_PATH, SNAPSHOTS_FILE);
+    LOGGER.info('Creating: ' + jsonFile);
+    fs.writeFileSync(jsonFile, JSON.stringify(data, null, 4));
 }
 
 function getTimestampNow() {
@@ -566,7 +583,7 @@ function createSnapshotSummary(name, timestamp, snapshots) {
     LOGGER.info('Creating: ' + summaryFile);
     fs.writeFileSync(summaryFile, data);
 
-    enforceMaxSnapshots();
+    createSnapshotsFile();
 }
 
 function getDateString(d) {
