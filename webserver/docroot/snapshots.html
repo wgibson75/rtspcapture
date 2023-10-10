@@ -1,0 +1,91 @@
+<html>
+  <script type="text/javascript">
+  const JSON_SUMMARY_FILE = 'snapshots/snapshots.json';
+  let SNAPSHOTS = [];
+  let SNAPSHOTS_INDEX = 0;
+
+  function getSnapshotUrl(index) {
+    return 'snapshots/' + SNAPSHOTS[index];
+  }
+
+  function getSnapshotTime(index) {
+    let filename = SNAPSHOTS[index];
+    let filenameNoExt = filename.split(".")[0];
+    let epoch = filenameNoExt.split("_")[1];
+    return epoch;
+  }
+
+  function showSnapshot() {
+    let banner = document.getElementById('banner');
+    let time = getSnapshotTime(SNAPSHOTS_INDEX);
+    let date = new Date(0);
+    date.setUTCMilliseconds(time);
+    let d = date.toString().split(' ');
+    d.splice(5, d.length - 5);
+    document.getElementById('time').innerHTML = d.join(' ');
+
+    let snapshot = document.getElementById('snapshot');
+    snapshot.width = '100%';
+    snapshot.height = '100%';
+    snapshot.src = getSnapshotUrl(SNAPSHOTS_INDEX);
+  }
+
+  function loadJsonSummary() {
+    const xhttp = new XMLHttpRequest();
+    xhttp.onreadystatechange = function () {
+      if ((this.readyState == 4) && (this.status == 200)) {
+        let jsonObj = JSON.parse(xhttp.responseText);
+        SNAPSHOTS = jsonObj.snapshots;
+        showSnapshot();
+      }
+    };
+    xhttp.open("GET", JSON_SUMMARY_FILE);
+    xhttp.send();
+  }
+
+  function nextSnapshot() {
+    if (SNAPSHOTS.length == 0) return;
+
+    if ((SNAPSHOTS_INDEX + 1) < SNAPSHOTS.length) {
+      ++SNAPSHOTS_INDEX;
+      showSnapshot();
+    }
+  }
+
+  function prevSnapshot() {
+    if (SNAPSHOTS.length == 0) return;
+
+    if (SNAPSHOTS_INDEX > 0) {
+      --SNAPSHOTS_INDEX;
+      showSnapshot();
+    }
+  }
+
+  function keypressHandler(e) {
+    switch(e.code) {
+      case 'Space':
+        nextSnapshot();
+        break;
+
+      default:
+        break;
+    }
+  }
+
+  function init() {
+    document.addEventListener('keypress', keypressHandler);
+    loadJsonSummary();
+  }
+
+  </script>
+   <body onload="init()" bgcolor="black" text="yellow">
+     <table width="100%" cellspacing="10" cellpadding="10" style="font-size: xx-large">
+       <tr>
+         <td align="center" width="70%" id="time">Loading please wait...</td>
+         <td align="center" width="15%" onclick="prevSnapshot()"><b>PREV</b></td>
+         <td align="center" width="15%" onclick="nextSnapshot()"><b>NEXT</b></td>
+       </tr>
+     </table>
+     <iframe id="snapshot"></iframe>
+  </body>
+</html>
