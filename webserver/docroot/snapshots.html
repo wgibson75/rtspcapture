@@ -30,12 +30,23 @@
     snapshot.src = getSnapshotUrl(SNAPSHOTS_INDEX);
   }
 
+  function insertSnapshotPane() {
+    let paneId = document.createAttribute('id');
+    paneId.value = 'snapshot';
+
+    let pane = document.createElement('iframe');
+    pane.setAttributeNode(paneId);
+
+    document.getElementById('main').appendChild(pane);;
+  }
+
   function loadJsonSummary() {
     const xhttp = new XMLHttpRequest();
     xhttp.onreadystatechange = function () {
       if ((this.readyState == 4) && (this.status == 200)) {
         let jsonObj = JSON.parse(xhttp.responseText);
         SNAPSHOTS = jsonObj.snapshots;
+        insertSnapshotPane();
         showSnapshot();
       }
     };
@@ -78,7 +89,7 @@
   }
 
   </script>
-   <body onload="init()" bgcolor="black" text="yellow">
+   <body onload="init()" bgcolor="black" text="yellow" id="main">
      <table width="100%" cellspacing="10" cellpadding="10" style="font-size: xx-large">
        <tr>
          <td align="center" width="70%" id="time">Loading please wait...</td>
@@ -86,6 +97,5 @@
          <td align="center" width="15%" onclick="nextSnapshot()"><b>NEXT</b></td>
        </tr>
      </table>
-     <iframe id="snapshot"></iframe>
   </body>
 </html>
