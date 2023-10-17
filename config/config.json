@@ -1,5 +1,5 @@
 {
-    "capture_dir"            : "/media/data/",
+    "capture_dir"            : "/media/data/cctv/",
     "doc_root_dir"           : "/var/www/html/",
     "video_dir"              : "cctv",
     "snapshots_dir"          : "snapshots",
