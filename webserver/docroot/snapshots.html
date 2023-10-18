@@ -55,18 +55,14 @@
   }
 
   function nextSnapshot() {
-    if (SNAPSHOTS.length == 0) return;
-
-    if ((SNAPSHOTS_INDEX + 1) < SNAPSHOTS.length) {
+    if ((SNAPSHOTS.length != 0) && ((SNAPSHOTS_INDEX + 1) < SNAPSHOTS.length)) {
       ++SNAPSHOTS_INDEX;
       showSnapshot();
     }
   }
 
   function prevSnapshot() {
-    if (SNAPSHOTS.length == 0) return;
-
-    if (SNAPSHOTS_INDEX > 0) {
+    if ((SNAPSHOTS.length != 0) && (SNAPSHOTS_INDEX > 0)) {
       --SNAPSHOTS_INDEX;
       showSnapshot();
     }
@@ -83,8 +79,24 @@
     }
   }
 
+  function keydownHandler(e) {
+    switch(e.code) {
+      case 'ArrowLeft':
+        prevSnapshot();
+        break;
+
+      case 'ArrowRight':
+        nextSnapshot();
+        break;
+
+      default:
+        break;
+    }
+  }
+
   function init() {
     document.addEventListener('keypress', keypressHandler);
+    document.addEventListener('keydown', keydownHandler);
     loadJsonSummary();
   }
 
