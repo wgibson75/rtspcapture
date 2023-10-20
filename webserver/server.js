@@ -15,6 +15,7 @@ const VIDEO_EXT              = 'mp4'                          // Video file exte
 const LOG_FILE               = 'cctvserver-%DATE%.log'        // Log filename
 const SNAPSHOT_IMAGES_FOLDER = 'images';                      // Snapshot images folder name
 const SNAPSHOTS_FILE         = 'snapshots.json';              // Snapshots summary filename
+const HOME_PAGE_HTML_FILE    = 'index.html';
 
 // FFMPEG command for taking a snapshot image from camera
 //
@@ -217,6 +218,9 @@ function requestHandler_playVideo(request, response, next) {
 function requestHandler_content(request, response, next) {
     LOGGER.info('requestHandler_content');
     let requestUrl = request.url.replace(/(\/)\/+/g, '$1');
+
+    if (requestUrl == '/') requestUrl += HOME_PAGE_HTML_FILE;
+
     let filePath = getLocalPath(requestUrl);
 
     if (!fs.existsSync(filePath)) return response.sendStatus(404);
@@ -266,7 +270,7 @@ function handleContent_media(request, filePath, response) {
     let fileSize  = fileStat.size;
     let range     = request.range(fileSize);
 
-    let contentType = mime.lookup(request.url);
+    let contentType = mime.lookup(filePath);
     if (!contentType) contentType = 'text/plain'; // Default response to plain text
 
     // If we need to provide a partial response (i.e. a chunk)
