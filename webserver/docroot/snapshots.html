@@ -1,15 +1,85 @@
 <html>
-  <script type="text/javascript">
+  <head>
+    <style>
+      body {
+        height: 100vh;
+        width: 100vw;
+      }
+
+      td {
+        text-align: center;
+        font-weight: bold;
+        color: #ffff00;
+      }
+
+      #control {
+        position: absolute;
+        width: 100%;
+        height: 50px;
+      }
+
+      #snapshot {
+        width: 100%;
+        height: 100%;
+      }
+
+      #time {
+        font-weight: normal;
+        color: #cccc00;
+      }
+
+      .holder {
+        width: 100%;
+        height: 100%;
+        position: relative;
+      }
+    </style>
+  </head>
+  <script src="jquery-3.7.1.min.js"></script>
+  <script>
+
   const JSON_SUMMARY_FILE = 'snapshots/snapshots.json';
-  let SNAPSHOTS = [];
-  let SNAPSHOTS_INDEX = 0;
+  const CONTROL_OFFSET_P = '250px';
+  const CONTROL_OFFSET_H = '30px';
+  const CONTROL_TEXT_SIZE_P = '30pt';
+  const CONTROL_TEXT_SIZE_H = '25pt';
+
+  let Snapshots = [];
+  let Snapshots_index = 0;
+  let Orientation = window.orientation;
+
+  function positionControls() {
+    if (Orientation == 0) { // If portrait
+      $('#control').css('bottom', CONTROL_OFFSET_P);
+      $('.control').css('fontSize', CONTROL_TEXT_SIZE_P);
+    }
+    else {
+      $('#control').css('bottom', CONTROL_OFFSET_H);
+      $('.control').css('fontSize', CONTROL_TEXT_SIZE_H);
+    }
+  }
+
+  $(document).ready(function () {
+    positionControls();
+
+    $.getJSON(JSON_SUMMARY_FILE, function(data) {
+      Snapshots = data.snapshots;
+      insertSnapshotPane();
+      showSnapshot();
+    });
+  });
+
+  $(window).bind("orientationchange", function(){
+    Orientation = window.orientation;
+    positionControls();
+  });
 
   function getSnapshotUrl(index) {
-    return 'snapshots/' + SNAPSHOTS[index];
+    return 'snapshots/' + Snapshots[index];
   }
 
   function getSnapshotTime(index) {
-    let filename = SNAPSHOTS[index];
+    let filename = Snapshots[index];
     let filenameNoExt = filename.split(".")[0];
     let epoch = filenameNoExt.split("_")[1];
     return epoch;
@@ -17,7 +87,7 @@
 
   function showSnapshot() {
     let banner = document.getElementById('banner');
-    let time = getSnapshotTime(SNAPSHOTS_INDEX);
+    let time = getSnapshotTime(Snapshots_index);
     let date = new Date(0);
     date.setUTCMilliseconds(time);
     let d = date.toString().split(' ');
@@ -25,9 +95,7 @@
     document.getElementById('time').innerHTML = d.join(' ');
 
     let snapshot = document.getElementById('snapshot');
-    snapshot.width = '100%';
-    snapshot.height = '100%';
-    snapshot.src = getSnapshotUrl(SNAPSHOTS_INDEX);
+    snapshot.src = getSnapshotUrl(Snapshots_index);
   }
 
   function insertSnapshotPane() {
@@ -40,75 +108,51 @@
     document.getElementById('main').appendChild(pane);;
   }
 
-  function loadJsonSummary() {
-    const xhttp = new XMLHttpRequest();
-    xhttp.onreadystatechange = function () {
-      if ((this.readyState == 4) && (this.status == 200)) {
-        let jsonObj = JSON.parse(xhttp.responseText);
-        SNAPSHOTS = jsonObj.snapshots;
-        insertSnapshotPane();
-        showSnapshot();
-      }
-    };
-    xhttp.open("GET", JSON_SUMMARY_FILE);
-    xhttp.send();
-  }
-
   function nextSnapshot() {
-    if ((SNAPSHOTS.length != 0) && ((SNAPSHOTS_INDEX + 1) < SNAPSHOTS.length)) {
-      ++SNAPSHOTS_INDEX;
-      showSnapshot();
+    if ((Snapshots.length != 0) && ((Snapshots_index + 1) < Snapshots.length)) {
+      showSnapshot(++Snapshots_index);
     }
   }
 
   function prevSnapshot() {
-    if ((SNAPSHOTS.length != 0) && (SNAPSHOTS_INDEX > 0)) {
-      --SNAPSHOTS_INDEX;
-      showSnapshot();
+    if ((Snapshots.length != 0) && (Snapshots_index > 0)) {
+      showSnapshot(--Snapshots_index);
     }
   }
 
   function keypressHandler(e) {
-    switch(e.code) {
-      case 'Space':
-        nextSnapshot();
-        break;
-
-      default:
-        break;
-    }
+    if (e.code == 'Space') nextSnapshot();
   }
 
   function keydownHandler(e) {
-    switch(e.code) {
-      case 'ArrowLeft':
-        prevSnapshot();
-        break;
-
-      case 'ArrowRight':
-        nextSnapshot();
-        break;
-
-      default:
-        break;
+    if (e.code == 'ArrowLeft') {
+      prevSnapshot();
+    }
+    else if (e.code == 'ArrowRight') {
+      nextSnapshot();
     }
   }
 
   function init() {
     document.addEventListener('keypress', keypressHandler);
     document.addEventListener('keydown', keydownHandler);
-    loadJsonSummary();
   }
 
   </script>
-   <body onload="init()" bgcolor="black" text="yellow" id="main">
-     <table width="100%" cellspacing="10" cellpadding="10" style="font-size: xx-large">
-       <tr>
-         <td align="center" width="55%" id="time">Loading please wait...</td>
-         <td align="center" width="15%" onclick="document.location.replace('/')"><b>HOME</b></td> 
-         <td align="center" width="15%" onclick="prevSnapshot()"><b>PREV</b></td>
-         <td align="center" width="15%" onclick="nextSnapshot()"><b>NEXT</b></td>
-       </tr>
-     </table>
+   <body onload="init()" bgcolor="black">
+     <div class="holder">
+       <div id="main">
+       </div>
+       <div id="control">
+         <table width="100%" heigh="100%" cellspacing="10" cellpadding="10" class="control">
+           <tr>
+             <td width="55%" id="time">Loading please wait...</td>
+             <td width="15%" onclick="document.location.replace('/')">HOME</td> 
+             <td width="15%" onclick="prevSnapshot()">&lt;&lt;</td>
+             <td width="15%" onclick="nextSnapshot()">&gt;&gt;</td>
+           </tr>
+         </table>
+       </div>
+     </div>
   </body>
 </html>
