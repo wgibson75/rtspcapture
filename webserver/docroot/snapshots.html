@@ -6,10 +6,24 @@
         width: 100vw;
       }
 
+      table {
+        width: 100%;
+        padding: 10px;
+        border-spacing: 10px;
+      }
+
       td {
         text-align: center;
         font-weight: bold;
         color: #ffff00;
+      }
+
+      select {
+        appearance: none;
+        font-weight: bold;
+        background-color: black;
+        color: #ffff00;
+        cursor: pointer;
       }
 
       #control {
@@ -39,14 +53,19 @@
   <script>
 
   const JSON_SUMMARY_FILE = 'snapshots/snapshots.json';
-  const CONTROL_OFFSET_P = '250px';
-  const CONTROL_OFFSET_H = '30px';
+  const CONTROL_OFFSET_P = '270px';
+  const CONTROL_OFFSET_H = '100px';
   const CONTROL_TEXT_SIZE_P = '30pt';
   const CONTROL_TEXT_SIZE_H = '25pt';
+  const SNAPSHOT_FILTER_ALL = '*';
+  const NAVIGATE_PREV = 0;
+  const NAVIGATE_NEXT = 1;
 
   let Snapshots = [];
-  let Snapshots_index = 0;
+  let Filter = SNAPSHOT_FILTER_ALL;
+  let SnapshotsIndex = 0;
   let Orientation = window.orientation;
+  let LastNavigation = NAVIGATE_NEXT;
 
   function positionControls() {
     if (Orientation == 0) { // If portrait
@@ -63,9 +82,13 @@
     positionControls();
 
     $.getJSON(JSON_SUMMARY_FILE, function(data) {
+      if (!(data instanceof Object)) return;
+      if (!('snapshots' in data)) return;
+
       Snapshots = data.snapshots;
       insertSnapshotPane();
       showSnapshot();
+      showFilters();
     });
   });
 
@@ -80,43 +103,123 @@
 
   function getSnapshotTime(index) {
     let filename = Snapshots[index];
-    let filenameNoExt = filename.split(".")[0];
-    let epoch = filenameNoExt.split("_")[1];
+    let filenameNoExt = filename.split('.')[0];
+    let epoch = filenameNoExt.split('_')[1];
     return epoch;
   }
 
   function showSnapshot() {
     let banner = document.getElementById('banner');
-    let time = getSnapshotTime(Snapshots_index);
+    let time = getSnapshotTime(SnapshotsIndex);
     let date = new Date(0);
     date.setUTCMilliseconds(time);
     let d = date.toString().split(' ');
+    console.log(d);
     d.splice(5, d.length - 5);
+    d.splice(3, 1);
     document.getElementById('time').innerHTML = d.join(' ');
 
     let snapshot = document.getElementById('snapshot');
-    snapshot.src = getSnapshotUrl(Snapshots_index);
+    snapshot.src = getSnapshotUrl(SnapshotsIndex);
   }
 
   function insertSnapshotPane() {
-    let paneId = document.createAttribute('id');
-    paneId.value = 'snapshot';
-
-    let pane = document.createElement('iframe');
-    pane.setAttributeNode(paneId);
-
-    document.getElementById('main').appendChild(pane);;
+    var p = $('<iframe id="snapshot"></iframe>');
+    p.appendTo('#main');
   }
 
   function nextSnapshot() {
-    if ((Snapshots.length != 0) && ((Snapshots_index + 1) < Snapshots.length)) {
-      showSnapshot(++Snapshots_index);
+    if (Snapshots.length == 0) return;
+    LastNavigation = NAVIGATE_NEXT;
+
+    if (Filter == SNAPSHOT_FILTER_ALL) {
+      if ((SnapshotsIndex + 1) < Snapshots.length) {
+        showSnapshot(++SnapshotsIndex);
+      }
+    }
+    else {
+      let index = SnapshotsIndex;
+      while ((index + 1) < Snapshots.length) {
+        if (Snapshots[++index].startsWith(Filter)) {
+          SnapshotsIndex = index;
+          showSnapshot(SnapshotsIndex);
+          break;
+        }
+      }
     }
   }
 
   function prevSnapshot() {
-    if ((Snapshots.length != 0) && (Snapshots_index > 0)) {
-      showSnapshot(--Snapshots_index);
+    if (Snapshots.length == 0) return;
+    LastNavigation = NAVIGATE_PREV;
+
+    if (Filter == SNAPSHOT_FILTER_ALL) {
+      if (SnapshotsIndex > 0) {
+        showSnapshot(--SnapshotsIndex);
+      }
+    }
+    else {
+      let index = SnapshotsIndex;
+      while (index > 0) {
+        if (Snapshots[--index].startsWith(Filter)) {
+          SnapshotsIndex = index;
+          showSnapshot(SnapshotsIndex);
+          break;
+        }
+      }
+    }
+  }
+
+  // Get a dictionary of snapshot filters where the keys are the filter labels
+  // that include a count in brackets of the number of matching snapshots and
+  // the keys are the filter strings.
+  function getFilters() {
+    if (Snapshots.length == 0) return undefined;
+
+    let filters = {};
+    Snapshots.forEach(function (entry) {
+      let pieces = entry.split('_');
+      pieces.pop();
+      let key = pieces.join('_');
+      filters[key] = ++filters[key] || 1;
+    });
+    filters[SNAPSHOT_FILTER_ALL] = Object.values(filters).reduce((accumulator, value) => {
+      return accumulator + value;
+    }, 0);
+
+    let rval = {};
+    for (let key in filters) {
+      rval[key + ' (' + filters[key] + ')'] = key;
+    }
+    return rval;
+  }
+
+  function showFilters() {
+    let filters = getFilters(Snapshots);
+    if (filters == undefined) return;
+
+    var f = $('<select />').attr('id', 'filterSelect').attr('class', 'control').attr('onchange', 'applyFilter()');
+
+    Object.keys(filters).toSorted().forEach(function (entry) {
+      $('<option />', {value: entry, text: entry}).appendTo(f);
+    });
+    f.appendTo('#filter');
+
+    positionControls(); // Position this control
+  }
+
+  function applyFilter() {
+    if (Snapshots.length == 0) return;
+
+    Filter = $('#filterSelect').find(':selected').text().split(' (')[0];
+
+    if ((Filter != SNAPSHOT_FILTER_ALL) && !Snapshots[SnapshotsIndex].startsWith(Filter)) {
+      if (LastNavigation == NAVIGATE_NEXT) {
+        nextSnapshot();
+      }
+      else {
+        prevSnapshot();
+      }
     }
   }
 
@@ -144,12 +247,13 @@
        <div id="main">
        </div>
        <div id="control">
-         <table width="100%" heigh="100%" cellspacing="10" cellpadding="10" class="control">
+         <table class="control">
            <tr>
-             <td width="55%" id="time">Loading please wait...</td>
-             <td width="15%" onclick="document.location.replace('/')">HOME</td> 
-             <td width="15%" onclick="prevSnapshot()">&lt;&lt;</td>
-             <td width="15%" onclick="nextSnapshot()">&gt;&gt;</td>
+             <td width="54%" id="time">Loading please wait...</td>
+             <td width="10%" onclick="document.location.replace('/')">Home</td>
+             <td width="20%" id="filter"></td>
+             <td width="8%" onclick="prevSnapshot()">&lt;&lt;</td>
+             <td width="8%" onclick="nextSnapshot()">&gt;&gt;</td>
            </tr>
          </table>
        </div>
