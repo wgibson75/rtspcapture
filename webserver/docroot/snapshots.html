@@ -211,6 +211,10 @@
   function applyFilter() {
     if (Snapshots.length == 0) return;
 
+    // Take the focus off the filter selection menu to prevent problems with
+    // using the left/right cursor keys to then navigate snapshots (e.g. on iPad)
+    $('#filterSelect').blur();
+
     Filter = $('#filterSelect').find(':selected').text().split(' (')[0];
 
     if ((Filter != SNAPSHOT_FILTER_ALL) && !Snapshots[SnapshotsIndex].startsWith(Filter)) {
