@@ -1,5 +1,8 @@
 <html>
   <head>
+    <link href="jquery-ui-1-13-2.css" rel="stylesheet">
+    <script src="jquery-3.7.1.min.js"></script>
+    <script src="jquery-ui-1-13-2.min.js"></script>
     <style>
       body {
         height: 100vh;
@@ -43,7 +46,6 @@
       }
     </style>
   </head>
-  <script src="jquery-3.7.1.min.js"></script>
   <script>
 
   const JSON_SUMMARY_FILE = 'snapshots/snapshots.json';
@@ -74,6 +76,11 @@
 
   $(document).ready(function () {
     positionControls();
+
+    // Make the controls draggable
+    $(function() {
+      $('#control').draggable();
+    });
 
     $.getJSON(JSON_SUMMARY_FILE, function(data) {
       if (!(data instanceof Object)) return;
@@ -108,7 +115,6 @@
     let date = new Date(0);
     date.setUTCMilliseconds(time);
     let d = date.toString().split(' ');
-    console.log(d);
     d.splice(5, d.length - 5);
     d.splice(3, 1);
     document.getElementById('time').innerHTML = d.join(' ');
