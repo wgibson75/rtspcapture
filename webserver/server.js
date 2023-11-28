@@ -562,6 +562,9 @@ function createSnapshotSummary(name, timestamp, snapshots) {
         // Only reload if clicked in top quarter of screen
         if (e.clientY < maxY) {
             location.reload();
+
+            // Pass focus back to snapshot filter
+            top.document.getElementById('filterSelect').focus();
         }
     }
     \n`;
