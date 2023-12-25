@@ -563,8 +563,9 @@ function createSnapshotSummary(name, timestamp, snapshots) {
         if (e.clientY < maxY) {
             location.reload();
 
-            // Pass focus back to snapshot filter
+            // Pass focus back to top level page via snapshot filter
             top.document.getElementById('filterSelect').focus();
+            top.document.getElementById('filterSelect').blur();
         }
     }
     \n`;
