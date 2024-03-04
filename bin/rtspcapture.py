@@ -1,6 +1,7 @@
 #!/usr/bin/env python3.10
 import argparse
 import os
+import shutil
 import sys
 import subprocess
 import time
@@ -72,7 +73,11 @@ class LiveStreamCapture(StreamCapture):
 
         # Create output directory for live streaming
         out_dir = '%s/%s' % (self.name, stream.name)
-        if not os.path.isdir(out_dir): os.mkdir(out_dir, 0o777)
+        if os.path.isdir(out_dir):
+            logger.info('Removing directory: %s' % out_dir)
+            shutil.rmtree(out_dir)
+        if not os.path.isdir(out_dir):
+            os.mkdir(out_dir, 0o777)
 
         self.out_playlist = '%s/live.m3u8' % out_dir
         self._start()
