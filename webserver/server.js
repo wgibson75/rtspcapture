@@ -533,7 +533,6 @@ function createSnapshotSummary(name, timestamp, snapshots) {
     <head><title>Video Snapshot</title></head>
     <body style="background-color: black; margin: 0; height: 100%" id="body">
     <div style="font-size: 0" id="main">
-    <script src="../jquery-3.7.1.min.js"></script>
     <script>
     function playVideo(url, positionSecs) {
         let body = document.getElementById('body');
@@ -571,7 +570,7 @@ function createSnapshotSummary(name, timestamp, snapshots) {
     }
     \n`;
 
-    data += 'let imageWidth = ' + ((snapshots.length > 1) ? 'Math.floor($(window).width() / 2)' : '$(window).width()') + ';';
+    data += 'let imageWidth = "' + ((snapshots.length > 1) ? '50%' : '100%') + '";';
 
     snapshots.forEach((entry, i) => {
         let [imageFile, videoUrl, position] = entry;
@@ -579,9 +578,9 @@ function createSnapshotSummary(name, timestamp, snapshots) {
 
         data += `document.writeln('<a onclick="playVideo('
             + "'${videoUrl}', ${position}"
-            + ')"><img src="${imageUrl}" width='
+            + ')"><img src="${imageUrl}" width="'
             + imageWidth
-            + '></a>');\n`;
+            + '"></a>');\n`;
     });
 
     data += `</script>
