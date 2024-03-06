@@ -48,7 +48,7 @@
             "port"     : 554,
             "streams"  : [
                 { "name" : "high_res", "width" : 1920, "height" : 1080, "path" : "/11" },
-                { "name" : "low_res",  "width" : 640,  "height" : 352,  "path" : "/22" }
+                { "name" : "low_res",  "width" : 640,  "height" : 360,  "path" : "/22", "aspect" : "640:360" }
             ]
         },
         {
@@ -59,7 +59,7 @@
             "port"     : 554,
             "streams"  : [
                 { "name" : "high_res", "width" : 1920, "height" : 1080, "path" : "/11" },
-                { "name" : "low_res",  "width" : 640,  "height" : 352,  "path" : "/22" }
+                { "name" : "low_res",  "width" : 640,  "height" : 360,  "path" : "/22", "aspect" : "640:360" }
             ]
         },
         {
@@ -70,7 +70,7 @@
             "port"     : 554,
             "streams"  : [
                 { "name" : "high_res", "width" : 1920, "height" : 1080, "path" : "/11" },
-                { "name" : "low_res",  "width" : 640,  "height" : 352,  "path" : "/22" }
+                { "name" : "low_res",  "width" : 640,  "height" : 360,  "path" : "/22", "aspect" : "640:360" }
             ]
         },
         {
@@ -81,7 +81,7 @@
             "port"     : 554,
             "streams"  : [
                 { "name" : "high_res", "width" : 1920, "height" : 1080, "path" : "/11" },
-                { "name" : "low_res",  "width" : 640,  "height" : 352,  "path" : "/22" }
+                { "name" : "low_res",  "width" : 640,  "height" : 360,  "path" : "/22", "aspect" : "640:360" }
             ]
         },
         {
@@ -114,7 +114,7 @@
             "port"     : 554,
             "streams"  : [
                 { "name" : "high_res", "width" : 1920, "height" : 1080, "path" : "/11", "vtag" : "hvc1" },
-                { "name" : "low_res",  "width" : 640,  "height" : 352,  "path" : "/22", "vtag" : "hvc1" }
+                { "name" : "low_res",  "width" : 640,  "height" : 360,  "path" : "/22", "vtag" : "hvc1", "aspect" : "640:360" }
             ]
         },
         {
@@ -125,7 +125,7 @@
             "port"     : 554,
             "streams"  : [
                 { "name" : "high_res", "width" : 1920, "height" : 1080, "path" : "/11", "vtag" : "hvc1" },
-                { "name" : "low_res",  "width" : 640,  "height" : 352,  "path" : "/22", "vtag" : "hvc1" }
+                { "name" : "low_res",  "width" : 640,  "height" : 360,  "path" : "/22", "vtag" : "hvc1", "aspect" : "640:360" }
             ]
         },
         {
