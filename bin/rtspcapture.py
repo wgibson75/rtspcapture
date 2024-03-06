@@ -95,6 +95,8 @@ class LiveStreamCapture(StreamCapture):
         cmd.extend(('-hls_time', '1'))
         cmd.extend(('-hls_wrap', '10'))
         cmd.extend(('-hls_segment_type', 'fmp4'))
+        if self.stream.aspect != None:
+            cmd.extend(('-aspect', self.stream.aspect))
         cmd.append((self.out_playlist))
 
         self.capture_proc = CommandProc(cmd)
@@ -132,6 +134,8 @@ class RecordStreamCapture(StreamCapture):
         cmd.extend(('-reset_timestamps', '1'))
         if self.stream.vtag != None:
             cmd.extend(('-tag:v', self.stream.vtag))
+        if self.stream.aspect != None:
+            cmd.extend(('-aspect', self.stream.aspect))
         cmd.append((self.out_record_format))
 
         self.capture_proc = CommandProc(cmd)
