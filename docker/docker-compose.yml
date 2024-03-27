@@ -1,27 +1,27 @@
 version: "3.7"
 
 services:
-#  capture:
-#    image: capture:latest
-#    build:
-#      context: ./capture
-#      dockerfile: Dockerfile
-#    restart: on-failure
-#    volumes:
-#      - ./capture/app:/app
-#      - ../config:/config
-#      - media_data:/data
+  capture:
+    image: capture:latest
+    build:
+      context: ./capture
+      dockerfile: Dockerfile
+    restart: on-failure
+    volumes:
+      - ./capture/app:/app
+      - ../config:/config
+      - media_data:/data
 
-#  checkmoov:
-#    image: checkmoov:latest
-#    build:
-#      context: ./checkmoov
-#      dockerfile: Dockerfile
-#    restart: on-failure
-#    volumes:
-#      - ./checkmoov/app:/app
-#      - ../config:/config
-#      - media_data:/data
+  checkmoov:
+    image: checkmoov:latest
+    build:
+      context: ./checkmoov
+      dockerfile: Dockerfile
+    restart: on-failure
+    volumes:
+      - ./checkmoov/app:/app
+      - ../config:/config
+      - media_data:/data
 
   webserver:
     image: webserver:latest
