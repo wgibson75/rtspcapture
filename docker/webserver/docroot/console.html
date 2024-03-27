@@ -3,8 +3,8 @@
 <body style="background-color: black; margin: 0; height: 100%">
 <div style="font-size: 0">
 <script>
-const baseUrl = ''; // Set to temporary server address and port
-const videoWidth = '25%';
+const VIDEO_WIDTH = '25%';
+const CAPTURE_PATH = '/capture/';
 
 const cameras = [
     'shed',
@@ -25,11 +25,11 @@ const cameras = [
 ];
 
 cameras.forEach(function(name) {
-    let linkUrl  = baseUrl + '/cctv/' + name + '/high_res/live.m3u8';
-    let videoUrl = baseUrl + '/cctv/' + name + '/low_res/live.m3u8';
+    let linkUrl  = CAPTURE_PATH + name + '/high_res/live.m3u8';
+    let videoUrl = CAPTURE_PATH + name + '/low_res/live.m3u8';
 
     document.writeln('<a href="' + linkUrl + '">');
-    document.writeln('<video style="vertical-align: top" width="' + videoWidth + '" src="' + videoUrl + '" autoplay playsinline>');
+    document.writeln('<video style="vertical-align: top" width="' + VIDEO_WIDTH + '" src="' + videoUrl + '" autoplay playsinline>');
     document.writeln('</video>');
     document.writeln('</a>');
 });

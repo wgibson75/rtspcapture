@@ -28,13 +28,13 @@ import re
 # NOTE: Last step required to use untrunc outside of $HOME.
 #
 
-LOG_FILE = 'checkmoov.log'
+UNTRUNC_BINARY = 'untrunc'
+FFMPEG_BINARY = 'ffmpeg'
+
 LOG_MAX_BYTES = 262144
 LOG_BACKUP_COUNT = 2
 
-# Period in seconds between checking all recordings
-CHECK_INTERVAL_SECS = 60
-
+logger = logging.getLogger('checkmoov_log')
 
 class CaptureConfig:
 
@@ -45,29 +45,34 @@ class CaptureConfig:
         except:
             sys.exit('Unable to open JSON configuration.')
 
-    def getCaptureDir(self):
         try:
-            return self.data['capture_dir']
+            self.capture_dir    = os.path.join(self.data['root_path'],
+                                               self.data['capture_dir'])
+            self.camera_names   = [x['name'] for x in self.data['cameras']]
+            self.log_file       = os.path.join(self.data['root_path'],
+                                               self.data['logs_dir'],
+                                               self.data['checkmoov_log'])
+            self.check_interval = self.data['checkmoov_interval_secs']
         except KeyError:
             sys.exit('Unable to read capture configuration.')
+
+    def getCaptureDir(self):
+        return self.capture_dir
 
     def getCameraNames(self):
-        try:
-            return [x['name'] for x in self.data['cameras']]
-        except KeyError:
-            sys.exit('Unable to read camera configuration.')
+        return self.camera_names
 
     def getLogFile(self):
-        try:
-            return os.path.join(self.data['logs_dir'], self.data['checkmoov_log_file'])
-        except KeyError:
-            sys.exit('Unable to read capture configuration.')
+        return self.log_file
+
+    def getCheckInterval(self):
+        return self.check_interval
 
 class CheckCamera:
     __MARKER_FILENAME = '.moov_check'
-    __CMD_CHECK_MOOV = 'ffmpeg -v trace -i %s 2>&1 | egrep -i "moov atom not found|invalid"'
-    __CMD_FIX_MOOV = 'untrunc-anthwlock %s %s'
-    __CMD_FASTSTART = 'ffmpeg -i %s -c:a copy -c:v copy -movflags faststart %s'
+    __CMD_CHECK_MOOV = FFMPEG_BINARY + ' -v trace -i %s 2>&1 | egrep -i "moov atom not found|invalid"'
+    __CMD_FIX_MOOV = UNTRUNC_BINARY + ' %s %s'
+    __CMD_FASTSTART = FFMPEG_BINARY + ' -i %s -c:a copy -c:v copy -movflags faststart %s'
     __MOOV_FIX_FILENAME = '%s_fixed.mp4'
     __FASTSTART_FILENAME = '%s_faststart.mp4'
 
@@ -80,9 +85,9 @@ class CheckCamera:
 
         files = self.__get_files_to_check()
         for f in files:
-            logging.info('Checking: %s, size=%d [total: %s files]' % (f, os.path.getsize(f), self.total_num_files))
             if os.path.getsize(f) == 0:
                 continue # Ignore empty files
+            logging.info('Checking: %s, size=%d [total: %s files]' % (f, os.path.getsize(f), self.total_num_files))
             if self.__is_file_missing_moov(f):
                 if not self.good_file:
                     self.good_file = self.__read_check_marker()
@@ -99,7 +104,8 @@ class CheckCamera:
         self.total_num_files = len(files)
         files.sort(key=lambda x: os.path.getmtime(x))
         self.__check_order_of_last_two_files(files)
-        self.ignored_file = files.pop() # Remove the most recent recording (which might be active)
+        if len(files):
+            self.ignored_file = files.pop() # Remove the most recent recording (which might be active)
         return files
 
     def __check_order_of_last_two_files(self, files):
@@ -199,17 +205,15 @@ class CheckAllCameras:
     def run(self):
         for cam in self.camera_names:
             cam_dir = os.path.join(self.capture_dir, cam)
+            if not os.path.isdir(cam_dir):
+                continue
             CheckCamera(cam_dir)
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('config_file', help='CCTV JSON configuration file.')
-    parser.add_argument('-i', '--check-interval', nargs='?', type=int, default=CHECK_INTERVAL_SECS,
-        help='Interval in seconds between checking all recordings.')
-    args = parser.parse_args()
-
-    config = CaptureConfig(args.config_file)
+def configure_logging(config):
     log_file = config.getLogFile()
+
+    if not os.path.exists(os.path.dirname(log_file)):
+        os.makedirs(os.path.dirname(log_file))
 
     try:
         logging.basicConfig(
@@ -226,12 +230,31 @@ def main():
     except PermissionError:
         print('Cannot open log file (%s). Logging is disabled.' % log_file)
 
+def checkmoov(config):
     logging.info('Starting...')
 
     scanner = CheckAllCameras(config)
     while True:
-        time.sleep(args.check_interval)
+        time.sleep(config.getCheckInterval())
         scanner.run()
+
+def main():
+    if not shutil.which(UNTRUNC_BINARY):
+        sys.exit('Cannot find %s' % UNTRUNC_BINARY)
+    if not shutil.which(FFMPEG_BINARY):
+        sys.exit('Cannot find %s' % FFMPEG_BINARY)
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('config_file', help='CCTV JSON configuration file.')
+    args = parser.parse_args()
+
+    config = CaptureConfig(args.config_file)
+    configure_logging(config)
+
+    try:
+        checkmoov(config)
+    except Exception:
+        logger.exception('Fatal error in main loop')
 
 if __name__ == "__main__":
     main()

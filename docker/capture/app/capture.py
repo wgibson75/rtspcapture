@@ -1,7 +1,6 @@
-#!/usr/bin/env python3.10
+#!/usr/bin/env python3
 import argparse
 import os
-import shutil
 import sys
 import subprocess
 import time
@@ -26,7 +25,7 @@ update_dead_time_secs = None
 class CommandProc:
     def __init__(self, cmd):
         self.cmd = cmd
-        logger.info('Invoking command: %s' % cmd)
+        logger.info('Invoking command: %s' % ' '.join(cmd))
         self.process = subprocess.Popen(self.cmd)
 
     def is_alive(self):
@@ -88,21 +87,27 @@ class LiveStreamCapture(StreamCapture):
         cmd.extend(('-fflags', 'nobuffer'))
         cmd.extend(('-rtsp_transport', 'tcp'))
         cmd.extend(('-i', 'rtsp://%s:%s@%s:%d%s' % (self.username, self.password, self.ip, self.port, self.stream.path)))
-        cmd.extend(('-c', 'copy')) # Take an exact copy of the input stream
+        cmd.extend(('-c:v', 'copy'))     # Copy the video stream
+        if (self.stream.include_audio):
+            cmd.extend(('-c:a', 'copy')) # Copy the audio stream if required
         cmd.extend(super().get_map_arg())
-        if (self.stream.xargs != None): # Add any extra arguments (ensuring we split on whitespace)
-            cmd.extend((self.stream.xargs.split()))
+        cmd.extend(('-f', 'hls'))
         cmd.extend(('-hls_time', '1'))
-        cmd.extend(('-hls_wrap', '10'))
+        cmd.extend(('-hls_list_size', '10'))
+        cmd.extend(('-hls_flags', 'delete_segments'))
         cmd.extend(('-hls_segment_type', 'fmp4'))
         if self.stream.aspect != None:
             cmd.extend(('-aspect', self.stream.aspect))
+        if (self.stream.xargs != None):  # Add any extra arguments (ensuring we split on whitespace)
+            cmd.extend((self.stream.xargs.split()))
         cmd.append((self.out_playlist))
 
         self.capture_proc = CommandProc(cmd)
 
     def is_alive(self):
         if not super().is_alive():
+            return False
+        if not os.path.isfile(self.out_playlist):
             return False
         secs_since_last_update = int(datetime.now(timezone.utc).timestamp() - os.lstat(self.out_playlist).st_mtime)
         if (secs_since_last_update > update_dead_time_secs):
@@ -208,14 +213,20 @@ class CameraCapture:
         self.rebooting = False
 
     def reboot(self):
-        if self.onvif_port != None and self.reboot_on_failure:
+        if not self.onvif_port or not self.reboot_on_failure:
+            return
+
+        try:
             cam = ONVIFCamera(self.ip, self.onvif_port, self.username, self.password, onvif_wsdl_defs)
             logger.info('######## Rebooting %s : %s' % (self.ip, cam.devicemgmt.SystemReboot()))
             self.rebooting = True
+        except Exception:
+            logger.exception('Failed to reboot %s' % self.ip)
 
 class CheckDiskUsage:
     def __init__(self, config):
         self.config = config
+        self.capture_path = os.path.join(config.root_path, config.capture_dir)
 
         while self.__is_usage_exceeded():
             oldest_file = self.__get_oldest_cam_file()
@@ -226,7 +237,7 @@ class CheckDiskUsage:
                 break
 
     def __get_disk_usage(self):
-        usage = shutil.disk_usage(self.config.capture_dir)
+        usage = shutil.disk_usage(self.capture_path)
         return usage.total, usage.free
 
     def __is_usage_exceeded(self):
@@ -238,7 +249,7 @@ class CheckDiskUsage:
         oldest_file = None
 
         for cam in self.config.cameras:
-            cam_dir = os.path.join(self.config.capture_dir, cam.name)
+            cam_dir = os.path.join(self.capture_path, cam.name)
 
             files = [os.path.join(cam_dir, f) for f in os.listdir(cam_dir) if re.match('.*\.mp4$', f, re.IGNORECASE)]
             files.sort(key=lambda x: os.path.getmtime(x))
@@ -269,7 +280,7 @@ class CheckDiskUsage:
         return cam_most_usage
 
     def __delete_oldest_rec(self, cam_name):
-        files = sorted(glob.glob(os.path.join(self.config.capture_dir, cam_name, '*.mp4')), key=os.path.getmtime)
+        files = sorted(glob.glob(os.path.join(self.capture_path, cam_name, '*.mp4')), key=os.path.getmtime)
         logger.info('#### Deleting oldest recording: %s' % os.path.basename(files[0]))
         os.remove(files[0])
 
@@ -294,10 +305,6 @@ def load_config(config_file):
 
         __setattr__, __getattr__ = __setitem__, __getitem__
 
-    # Load config from script directory if no path given
-    if not re.search('[\\\/]', config_file):
-        config_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), config_file)
-
     with open(config_file) as json_config:
         config = json.load(json_config)
     return AttrifyDict(config)
@@ -306,38 +313,38 @@ def health_check(cc_list):
     for cc in cc_list:
         cc.health_check()
 
-def configure_logging(log_file, log_dir, log_max_bytes, log_backup_count):
+def configure_logging(config):
     logger.setLevel(logging.DEBUG)
 
+    log_dir = os.path.join(config.root_path, config.logs_dir)
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
-    log_path = os.path.join(log_dir, log_file)
+    log_path = os.path.join(log_dir, config.capture_log)
 
     handler = RotatingFileHandler(
         log_path,
-        maxBytes=log_max_bytes,
-        backupCount=log_backup_count
+        maxBytes=config.log_max_bytes,
+        backupCount=config.log_backup_count
     )
     formatter = logging.Formatter('%(asctime)s %(message)s')
     handler.setFormatter(formatter)
     logger.addHandler(handler)
 
-def capture_from_cameras(config_file):
+def capture_from_cameras(config):
     global update_dead_time_secs
     global onvif_wsdl_defs
 
     cc_list = [] # Camera capture list
 
-    config = load_config(config_file)
     update_dead_time_secs = config.time_must_be_dead_secs
     onvif_wsdl_defs = config.onvif_wsdl_defs
 
-    configure_logging(config.capture_log_file, config.logs_dir, config.log_max_bytes, config.log_backup_count)
+    logger.info('Starting capture...')
 
-    logger.info('Waiting for %d seconds before starting...' % config.startup_delay_secs)
-    time.sleep(config.startup_delay_secs)
-
-    os.chdir(config.capture_dir)
+    capture_dir = os.path.join(config.root_path, config.capture_dir)
+    if not os.path.exists(capture_dir):
+        os.mkdir(capture_dir)
+    os.chdir(capture_dir)
 
     for c in config.cameras:
         cc_list.append(CameraCapture(c, config.segment_length, config.segment_wrap))
@@ -352,7 +359,13 @@ def main():
     parser.add_argument('config_file', help='CCTV JSON configuration file.')
     args = parser.parse_args()
 
-    capture_from_cameras(args.config_file)
+    config = load_config(args.config_file)
+    configure_logging(config)
+
+    try:
+        capture_from_cameras(config)
+    except Exception:
+        logger.exception('Fatal error in main loop')
 
 if __name__ == "__main__":
     main()
