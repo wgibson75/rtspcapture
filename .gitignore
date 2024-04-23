@@ -1,4 +1,5 @@
 node_modules/
+var/
 package-lock.json
 ssl-server.crt
 ssl-server.key
