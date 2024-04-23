@@ -1,0 +1,27 @@
+<!doctype html>
+<html>
+  <head>
+    <title>CCTV Console</title>
+    <link href="/css/console.css" rel="stylesheet" />
+  </head>
+  <body>
+    <div style="font-size: 0">
+      <script>
+      const VIDEO_WIDTH = '25%';
+      const CAPTURE_DIR = '<%= capture_dir %>';
+
+      var cameras = '<%= cameras %>'.split(',');
+
+      cameras.forEach(function(name) {
+        let linkUrl  = '/' + CAPTURE_DIR + '/' + name + '/high_res/live.m3u8';
+        let videoUrl = '/' + CAPTURE_DIR + '/' + name + '/low_res/live.m3u8';
+
+        document.writeln('<a href="' + linkUrl + '">');
+        document.writeln('<video style="vertical-align: top" width="' + VIDEO_WIDTH + '" src="' + videoUrl + '" autoplay playsinline>');
+        document.writeln('</video>');
+        document.writeln('</a>');
+      });
+      </script>
+    </div>
+  </body>
+</html>

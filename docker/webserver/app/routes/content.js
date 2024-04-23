@@ -62,6 +62,14 @@ router.get('/accounts', ensureLoggedIn, function(request, response, next) {
     });
 });
 
+router.get('/console', ensureLoggedIn, function(request, response, next) {
+    var cameras = [];
+    config.get('cameras').forEach((camera) => {
+        cameras.push(camera.name);
+    });
+    response.render('console', { capture_dir: config.get('capture_dir'), cameras: cameras });
+});
+
 router.get(/^.*$/, ensureLoggedIn, function(request, response, next) {
     logger.info('requestHandler_content');
 
