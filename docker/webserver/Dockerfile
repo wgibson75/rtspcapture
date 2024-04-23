@@ -1,8 +1,9 @@
 FROM alpine:3.19.0
 
-WORKDIR /ssl
-COPY ./ssl/server.crt ./
-COPY ./ssl/server.key ./
+WORKDIR /auth
+COPY ./auth/ssl-server.crt ./
+COPY ./auth/ssl-server.key ./
+COPY ./auth/cookie-secret.txt ./
 
 RUN apk update \
     && apk add ffmpeg=6.1.1-r0 \

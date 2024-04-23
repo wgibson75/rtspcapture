@@ -1,4 +1,5 @@
 node_modules/
 package-lock.json
-server.crt
-server.key
+ssl-server.crt
+ssl-server.key
+cookie-secret.txt

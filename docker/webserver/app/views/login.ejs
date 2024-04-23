@@ -1,0 +1,36 @@
+<!doctype html>
+<html>
+  <head>
+    <link href="/css/login.css" rel="stylesheet" />
+  </head>
+  <body>
+  <form action="/login/password" method="post">
+    <table border="0">
+      <tr>
+        <td>Username</td>
+        <td><input name="username" type="text" required autofocus></td>
+      </tr>
+      <tr>
+        <td>Password</td>
+        <td><input name="password" type="password" required></td>
+      </tr>
+      <tr>
+        <td>&nbsp;</td>
+        <td>
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button onclick="submit()">Login</button>
+        </td>
+      </tr>
+      <tr>
+        <td class="message" colspan="2">
+        <% if (hasMessages) { %>
+          <% messages.forEach(function(message) { %>
+          <p><%= message %></p>
+          <% }); %>
+        <% } %>
+        </td>
+      </tr>
+    </table>
+  </form>
+  </body>
+</html>

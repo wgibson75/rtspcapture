@@ -1,9 +1,18 @@
 {
   "name": "webserver",
   "dependencies": {
+    "connect-ensure-login": "^0.1.1",
+    "connect-sqlite3": "^0.9.15",
+    "cookie-parser": "^1.4.6",
+    "crypto": "^1.0.1",
+    "csurf": "^1.11.0",
+    "ejs": "^3.1.10",
     "express": "^4.17.1",
+    "express-session": "^1.18.0",
     "graceful-fs": "^4.2.6",
     "mime-types": "^2.1.31",
+    "passport": "^0.7.0",
+    "passport-local": "^1.0.0",
     "util": "^0.12.5",
     "winston": "^3.3.3",
     "winston-daily-rotate-file": "^4.7.1"

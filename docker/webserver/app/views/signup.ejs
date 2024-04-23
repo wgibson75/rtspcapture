@@ -1,0 +1,55 @@
+<!doctype html>
+<html>
+  <head>
+    <link href="/css/signup.css" rel="stylesheet" />
+    <script type="text/javascript">
+
+    function display_message(msg) {
+      document.getElementById('message').innerHTML = msg;
+    }
+
+    function check_form(action) {
+      var password = document.getElementById("password");
+      var confirm_password = document.getElementById("confirm_password");
+      
+      var passwords_match = password.value == confirm_password.value ? true : false;
+      if (!passwords_match) display_message('Passwords don\'t match!');
+
+      return passwords_match;
+    }
+
+    </script>
+  </head>
+  <body>
+  <form id="signup_form" action="/signup" method="post" onsubmit="return check_form()">
+    <table border="0">
+      <tr>
+        <td>Username</td>
+        <td><input name="username" type="text" required autofocus></td>
+      </tr>
+      <tr>
+        <td>Password</td>
+        <td><input id="password" name="password" type="password" required></td>
+      </tr>
+      <tr>
+        <td>Confirm Password</td>
+        <td><input id="confirm_password" name="confirm_password" type="password" required></td>
+      </tr>
+      <tr>
+        <td>&nbsp;</td>
+        <td>
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button type="submit">Sign-up</button>
+        </td>
+      </tr>
+      <tr>
+        <td class="message" id="message" colspan="2">
+          <% if (locals?.message) { %>
+            <%= message %>
+          <% } %>
+        </td>
+      </tr>
+    </table>
+  </form>
+  </body>
+</html>

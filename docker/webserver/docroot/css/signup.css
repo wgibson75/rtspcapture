@@ -1,0 +1,18 @@
+body {
+  background-color: black;
+  color: yellow;
+  font-size: 20pt;
+}
+table {
+  border-spacing: 20px;
+  margin: auto;
+}
+td.message {
+  color: #cc0000;
+  text-align: center;
+}
+input, button {
+  background-color: #333333;
+  color: yellow;
+  font-size: 20pt;
+}

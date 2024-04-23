@@ -1,0 +1,40 @@
+<html>
+  <head>
+    <link href="/css/index.css" rel="stylesheet" />
+    <script type="text/javascript">
+
+    function gotoUrl(url) {
+      top.document.location = url;
+    }
+
+    function submit(action) {
+      var form = document.getElementById("auth_form");
+      form.action = action;
+      form.submit();
+    }
+
+    </script>
+  </head>
+  <body>
+    <form id="auth_form" method="post">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    </form>
+    <table class="auth" border="0">
+      <tr class="auth">
+        <td class="auth" onclick="submit('/logout')">LOGOUT</td>
+        <td class="auth" onclick="gotoUrl('signup')">SIGNUP</td>
+        <td class="auth" onclick="gotoUrl('accounts')">ACCOUNTS</td>
+      </tr>
+    </table>
+    <table border="0">
+      <tr>
+        <td onclick="gotoUrl('console.html')">Console</td>
+        <td onclick="gotoUrl('snapshots.html')">Snapshots</td>
+      </tr>
+      <tr>
+        <td onclick="gotoUrl('capture')">Recordings</td>
+        <td onclick="gotoUrl('logs')">Logs</td>
+      </tr>
+    </table>
+  </body>
+</html>

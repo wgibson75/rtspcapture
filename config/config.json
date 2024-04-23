@@ -4,6 +4,7 @@
     "capture_dir"             : "capture",
     "logs_dir"                : "logs",
     "snapshots_dir"           : "snapshots",
+    "snapshot_images_dir"     : "images",
     "capture_log"             : "capture.log",
     "checkmoov_log"           : "checkmoov.log",
 

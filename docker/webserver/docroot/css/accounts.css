@@ -1,0 +1,14 @@
+body {
+  background-color: black;
+  color: yellow;
+  font-size: 20pt;
+}
+table {
+  border-spacing: 15px;
+  margin: auto;
+}
+td.button {
+  padding: 5px;
+  color: #666600;
+  font-style: italic;
+}

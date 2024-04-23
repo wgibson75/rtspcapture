@@ -1,0 +1,39 @@
+<!doctype html>
+<html>
+  <head>
+    <link href="/css/accounts.css" rel="stylesheet" />
+    <script type="text/javascript">
+
+    function delete_user(uid)
+    {
+      var form = document.getElementById('delete_account_form');
+      var uid_field = document.getElementById('uid');
+
+      uid_field.value = uid;
+      form.submit();
+    }
+
+    </script>
+  </head>
+  <body>
+  <form id="delete_account_form" action="/delete" method="post">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <input id="uid" type="hidden" name="uid">
+    <table>
+      <% usernames.forEach(function(username, index) { %>
+      <tr>
+        <td>
+          <%= username %>
+        </td>
+        <% if (username != current_user) {%>
+        <td class="button" onclick=delete_user("<%=username%>")>delete
+        <% } else { %>
+        <td>&nbsp;
+        <% } %>
+        </td>
+      </tr>
+      <% }) %>
+    </table>
+  </form>
+  </body>
+</html>  
