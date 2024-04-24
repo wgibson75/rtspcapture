@@ -6,7 +6,7 @@ services:
     build:
       context: ./capture
       dockerfile: Dockerfile
-    restart: on-failure
+    restart: always
     volumes:
       - ./capture/app:/app
       - ../config:/config
@@ -17,7 +17,7 @@ services:
     build:
       context: ./checkmoov
       dockerfile: Dockerfile
-    restart: on-failure
+    restart: always
     volumes:
       - ./checkmoov/app:/app
       - ../config:/config
@@ -30,7 +30,7 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8443:8443"
-    restart: on-failure
+    restart: always
     volumes:
       - ./webserver/app:/app
       - ./webserver/docroot:/docroot
