@@ -35,14 +35,19 @@ const SERVER_COOKIE_SECRET   = fs.readFileSync('/auth/cookie-secret.txt');
 main();
 
 function main() {
-    let app             = express();
-    let ss_app          = express(); // Only used for taking snapshots
-    let config_file     = process.argv[2];
-    let secure_port     = isNaN(process.argv[3]) ? DEFAULT_SECURE_PORT : process.argv[3];
-    let non_secure_port = isNaN(process.argv[4]) ? DEFAULT_NON_SECURE_PORT : process.argv[4];
-
+    // Load the configuration
+    let config_file = process.argv[2];
     config.load(config_file);
+
+    // Initialise our logger
     logger.init();
+
+    ////
+    // Secure express app
+    //////////////////////
+
+    let app         = express();
+    let secure_port = isNaN(process.argv[3]) ? DEFAULT_SECURE_PORT : process.argv[3];
 
     app.set('views', path.join(__dirname, 'views'));
     app.set('view engine', 'ejs');
@@ -89,11 +94,20 @@ function main() {
             for (i in ips) logger.info('Listening on: https://%s:%s', ips[i], secure_port);
     });
 
-    // Setup route for taking snapshots
-    ss_app.use('/', allRouter);
-    ss_app.use('/', snapshotRouter);
+    ////
+    // Non-secure express app
+    //////////////////////////
 
-    const non_secure_server = http.createServer(ss_app).listen(non_secure_port, () => {
+    // Only used for taking snapshots
+
+    let ns_app = express();
+    let non_secure_port = isNaN(process.argv[4]) ? DEFAULT_NON_SECURE_PORT : process.argv[4];
+
+    // Setup route for taking snapshots
+    ns_app.use('/', allRouter);
+    ns_app.use('/', snapshotRouter);
+
+    const non_secure_server = http.createServer(ns_app).listen(non_secure_port, () => {
         let ips = getHostIpList();
 
         if (ips.length == 0)
