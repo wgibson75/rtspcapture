@@ -2,6 +2,7 @@ const os             = require('os');
 const fs             = require('graceful-fs');
 const express        = require('express');
 const https          = require('https');
+const http           = require('http');
 const path           = require('path');
 
 const cookieParser   = require('cookie-parser');
@@ -17,7 +18,8 @@ const authRouter     = require('./routes/auth');
 const snapshotRouter = require('./routes/snapshot');
 const contentRouter  = require('./routes/content');
 
-const DEFAULT_SERVER_PORT    = 8443; // Default HTTP listening port
+const DEFAULT_SECURE_PORT     = 8443; // Default HTTPS listening port
+const DEFAULT_NON_SECURE_PORT = 8080; // Default HTTP listening port
 
 // Required for SSL support
 const SERVER_PRIVATE_KEY     = fs.readFileSync('/auth/ssl-server.key');
@@ -33,9 +35,11 @@ const SERVER_COOKIE_SECRET   = fs.readFileSync('/auth/cookie-secret.txt');
 main();
 
 function main() {
-    let app         = express();
-    let config_file = process.argv[2];
-    let port        = isNaN(process.argv[3]) ? DEFAULT_SERVER_PORT : process.argv[3];
+    let app             = express();
+    let ss_app          = express(); // Only used for taking snapshots
+    let config_file     = process.argv[2];
+    let secure_port     = isNaN(process.argv[3]) ? DEFAULT_SECURE_PORT : process.argv[3];
+    let non_secure_port = isNaN(process.argv[4]) ? DEFAULT_NON_SECURE_PORT : process.argv[4];
 
     config.load(config_file);
     logger.init();
@@ -69,7 +73,6 @@ function main() {
     // Setup the routes
     app.use('/', allRouter);
     app.use('/', authRouter);
-    app.use('/', snapshotRouter);
     app.use('/', contentRouter);
 
     const httpsOptions = {
@@ -77,13 +80,26 @@ function main() {
         cert: SERVER_CERTIFICATE
     };
 
-    const server = https.createServer(httpsOptions, app).listen(port, () => {
+    const secure_server = https.createServer(httpsOptions, app).listen(secure_port, () => {
         let ips = getHostIpList();
 
         if (ips.length == 0)
             logger.info('No network interfaces');
         else
-            for (i in ips) logger.info('Listening on: https://%s:%s', ips[i], port);
+            for (i in ips) logger.info('Listening on: https://%s:%s', ips[i], secure_port);
+    });
+
+    // Setup route for taking snapshots
+    ss_app.use('/', allRouter);
+    ss_app.use('/', snapshotRouter);
+
+    const non_secure_server = http.createServer(ss_app).listen(non_secure_port, () => {
+        let ips = getHostIpList();
+
+        if (ips.length == 0)
+            logger.info('No network interfaces');
+        else
+            for (i in ips) logger.info('Listening on: http://%s:%s', ips[i], non_secure_port);
     });
 }
 

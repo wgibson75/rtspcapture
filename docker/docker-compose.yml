@@ -30,6 +30,7 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8443:8443"
+      - "8080:8080"
     restart: always
     volumes:
       - ./webserver/app:/app

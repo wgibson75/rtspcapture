@@ -11,3 +11,4 @@ RUN apk update \
     && apk add npm
 
 CMD /app/startup.sh
+#CMD sleep infinity
