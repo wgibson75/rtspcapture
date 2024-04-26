@@ -159,6 +159,7 @@ class RecordStreamCapture(StreamCapture):
     def get_segment_start_num(self):
         files = sorted(glob.glob(self.out_record_search), key=os.path.getmtime, reverse=True)
         if (len(files) == 0): return 0
+        logger.info('Latest segment file is: %s' % files[0])
         return int(os.path.splitext(files[0])[0].split('_')[-1]) + 1
 
 class CameraCapture:
