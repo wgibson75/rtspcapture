@@ -115,10 +115,19 @@ function handleContent_dirListing(request, response, filePath) {
     files.forEach((entry, i) => {
         let filename = entry[0];
         let fstat    = entry[1];
-        response.write('<tr class="large-text"><td><a href="' + path.join(request.url, filename) + '">'
-            + (fstat.isDirectory() ? '[' + filename + ']' : filename) + '</a></td><td>&nbsp;&nbsp;'
-            + getDateString(fstat.mtime) + '</td><td>&nbsp;&nbsp;'
-            + getSizeString(fstat.size) + '</td></tr>');
+        let [date, day, time] = getDateString(fstat.mtime).split(' ');
+        let fields = [date, day, time, getSizeString(fstat.size)];
+
+        let html = '';
+        html += '<tr class="large-text"><td><a href="' + path.join(request.url, filename) + '">';
+        html += (fstat.isDirectory() ? '[' + filename + ']' : filename) + '</a>&nbsp;</td>';
+
+        for (let field of fields) {
+            html += '<td>&nbsp;' + field + '</td>';
+        }
+        html += '</tr>';
+
+        response.write(html);
     });
     response.write('</table>');
     response.write('</p></body></html>');
@@ -224,8 +233,9 @@ function getFiles(dirPath) {
 }
 
 function getDateString(d) {
+    const days_of_week = ['Sun', 'Mon', 'Tue', 'Wed', 'Thur', 'Fri', 'Sat'];
     return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2)
-        + ' ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2) + ':' + ('0' + d.getSeconds()).slice(-2);
+        + ' ' + days_of_week[d.getDay()] + ' ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2) + ':' + ('0' + d.getSeconds()).slice(-2);
 }
 
 function getSizeString(s) {
