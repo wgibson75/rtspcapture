@@ -161,7 +161,7 @@ class RecordStreamCapture(StreamCapture):
         if (len(files) == 0): return 0
         match = re.search(r'^.*?(\d+)\..*+$', files[0])
         if match:
-            return int(match.group(1)) # Segment number
+            return int(match.group(1)) + 1 # Segment number
         else:
             raise Exception('Unable to determine segment start number (%s)' % files[0])
 
