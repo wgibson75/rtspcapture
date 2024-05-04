@@ -3,6 +3,9 @@ body {
   color: yellow;
   font-size: 20pt;
 }
+p {
+  text-align: center;
+}
 table {
   border-spacing: 15px;
   margin: auto;

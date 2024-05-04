@@ -70,6 +70,10 @@ router.get('/console', ensureLoggedIn, function(request, response, next) {
     response.render('console', { capture_dir: config.get('capture_dir'), cameras: cameras });
 });
 
+router.get('/snapshots', ensureLoggedIn, function(request, response, next) {
+    response.render('snapshots', { snapshots_dir: config.get('snapshots_dir') });
+});
+
 router.get(/^.*$/, ensureLoggedIn, function(request, response, next) {
     logger.info('requestHandler_content');
 
