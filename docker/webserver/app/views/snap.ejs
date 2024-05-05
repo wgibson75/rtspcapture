@@ -1,0 +1,57 @@
+<html>
+  <head>
+    <title>Video Snapshot</title>
+  </head>
+  <body style="background-color: black; margin: 0; height: 100%" id="body">
+    <div style="font-size: 0" id="main">
+    <script>
+
+    var snapshots = [];
+    <% entries.forEach(entry => { %>snapshots.push([ "<%= entry.image %>", "<%= entry.video %>", <%= entry.pos %> ]);
+    <% }); %>
+
+    function playVideo(url, positionSecs) {
+        let body = document.getElementById('body');
+        let main = document.getElementById('main');
+
+        let video = document.createElement('video');
+        video.setAttribute('width', window.innerWidth);
+        video.setAttribute('src', url + '#t=' + positionSecs);
+        video.setAttribute('autoplay', '');
+        video.setAttribute('playsinline', '');
+        video.setAttribute('controls', '');
+
+        body.replaceChild(video, main);
+        
+        // Have to delay setting the click handler otherwise it will
+        // fire instantly for the click that triggered this call
+        setTimeout(setClickHandler, 100);
+    }
+
+    function setClickHandler() {
+        document.addEventListener('click', onClickHandler);
+    }
+
+    function onClickHandler(e) {
+        let maxY = window.innerHeight * 0.25;
+
+        // Only reload if clicked in top quarter of screen
+        if (e.clientY < maxY) {
+            location.reload();
+
+            // Pass focus back to top level page via snapshot filter
+            top.document.getElementById('filterSelect').focus();
+            top.document.getElementById('filterSelect').blur();
+        }
+    }
+
+    let imageWidth = snapshots.length > 1 ? '50%' : '100%';
+
+    snapshots.forEach((entry) => {
+        let [imageUrl, videoUrl, position] = entry;
+        document.writeln(`<a onclick="playVideo(\'${videoUrl}\', ${position})"><img src="${imageUrl}" width="${imageWidth}"></a>`);
+    });
+    </script>
+    </div>
+  </body>
+</html>

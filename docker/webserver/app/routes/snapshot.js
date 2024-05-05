@@ -3,6 +3,7 @@ const path    = require('path');
 const fs      = require('graceful-fs');
 const spawn   = require('child_process').spawn;
 const util    = require('util');
+const ejs     = require('ejs');
 
 const utils  = require('../utils');
 const config = require('../config');
@@ -135,67 +136,20 @@ function getActiveRecordingAndPosition(camera, timestampNow) {
 }
 
 function createSnapshotSummary(name, timestamp, snapshots) {
-    let data = `<html>
-    <head><title>Video Snapshot</title></head>
-    <body style="background-color: black; margin: 0; height: 100%" id="body">
-    <div style="font-size: 0" id="main">
-    <script>
-    function playVideo(url, positionSecs) {
-        let body = document.getElementById('body');
-        let main = document.getElementById('main');
+    var file = path.join(config.get('snapshot_path'), util.format('%s_%s.html', name, timestamp));
 
-        let video = document.createElement('video');
-        video.setAttribute('width', window.innerWidth);
-        video.setAttribute('src', url + '#t=' + positionSecs);
-        video.setAttribute('autoplay', '');
-        video.setAttribute('playsinline', '');
-        video.setAttribute('controls', '');
+    logger.info('Creating: ' + file);
 
-        body.replaceChild(video, main);
-        
-        // Have to delay setting the click handler otherwise it will
-        // fire instantly for the click that triggered this call
-        setTimeout(setClickHandler, 100);
-    }
-
-    function setClickHandler() {
-        document.addEventListener("click", onClickHandler);
-    }
-
-    function onClickHandler(e) {
-        let maxY = window.innerHeight * 0.25;
-
-        // Only reload if clicked in top quarter of screen
-        if (e.clientY < maxY) {
-            location.reload();
-
-            // Pass focus back to top level page via snapshot filter
-            top.document.getElementById('filterSelect').focus();
-            top.document.getElementById('filterSelect').blur();
-        }
-    }
-    \n`;
-
-    data += 'let imageWidth = "' + ((snapshots.length > 1) ? '50%' : '100%') + '";';
-
-    snapshots.forEach((entry, i) => {
+    var entries = [];
+    snapshots.forEach((entry) => {
         let [imageFile, videoUrl, position] = entry;
         let imageUrl = path.join(config.get('snapshot_images_dir'), imageFile);
-
-        data += `document.writeln('<a onclick="playVideo('
-            + "'${videoUrl}', ${position}"
-            + ')"><img src="${imageUrl}" width="'
-            + imageWidth
-            + '"></a>');\n`;
+        entries.push({ image: imageUrl, video: videoUrl, pos: position });
     });
 
-    data += `</script>
-    </div></body>
-    </html>`;
-
-    let summaryFile = path.join(config.get('snapshot_path'), util.format('%s_%s.html', name, timestamp));
-    logger.info('Creating: ' + summaryFile);
-    fs.writeFileSync(summaryFile, data);
+    var template = fs.readFileSync('views/snap.ejs', 'utf-8');
+    var html     = ejs.render (template , { entries: entries });
+    fs.writeFileSync(file, html, 'utf8');
 
     createSnapshotsFile();
 }
