@@ -1,7 +1,7 @@
 body {
   background-color: black;
   color: yellow;
-  font-size: 20pt;
+  font-size: 30pt;
 }
 p {
   text-align: center;
@@ -9,6 +9,7 @@ p {
 table {
   border-spacing: 15px;
   margin: auto;
+  font-size: 30pt;
 }
 td.button {
   padding: 5px;
