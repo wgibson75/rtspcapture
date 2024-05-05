@@ -33,25 +33,27 @@
             ]
         },
         {
-            "name"     : "back_of_house",
+            "name"     : "front_down_road",
             "username" : "admin",
             "password" : "",
-            "ip"       : "192.168.0.108",
+            "ip"       : "192.168.0.124",
             "port"     : 554,
             "streams"  : [
-                { "name" : "high_res", "width" : 1920, "height" : 1080, "path" : "/Streaming/Channels/1" },
-                { "name" : "low_res",  "width" : 640,  "height" : 360,  "path" : "/Streaming/Channels/2" }
+                { "name" : "high_res", "width" : 2880, "height" : 1620, "path" : "/avstream/channel=1/stream=0.sdp", "vtag" : "hvc1" },
+                { "name" : "low_res",  "width" : 640,  "height" : 360,  "path" : "/avstream/channel=1/stream=1.sdp", "vtag" : "hvc1", "aspect" : "640:360" }
             ]
         },
         {
-            "name"     : "kitchen",
-            "username" : "admin",
-            "password" : "",
-            "ip"       : "192.168.0.111",
-            "port"     : 554,
+            "name"              : "footpath",
+            "username"          : "admin",
+            "password"          : "",
+            "ip"                : "192.168.0.119",
+            "port"              : 554,
+            "onvif_port"        : 8080,
+            "reboot_on_failure" : true,
             "streams"  : [
-                { "name" : "high_res", "width" : 1920, "height" : 1080, "path" : "/11" },
-                { "name" : "low_res",  "width" : 640,  "height" : 360,  "path" : "/22", "aspect" : "640:360" }
+                { "name" : "high_res", "width" : 1920, "height" : 1080, "path" : "/11", "vtag" : "hvc1" },
+                { "name" : "low_res",  "width" : 640,  "height" : 360,  "path" : "/22", "vtag" : "hvc1", "aspect" : "640:360" }
             ]
         },
         {
@@ -77,21 +79,21 @@
             ]
         },
         {
-            "name"     : "downstairs_hallway",
+            "name"     : "back_of_house",
             "username" : "admin",
             "password" : "",
-            "ip"       : "192.168.0.114",
+            "ip"       : "192.168.0.108",
             "port"     : 554,
             "streams"  : [
-                { "name" : "high_res", "width" : 1920, "height" : 1080, "path" : "/11" },
-                { "name" : "low_res",  "width" : 640,  "height" : 360,  "path" : "/22", "aspect" : "640:360" }
+                { "name" : "high_res", "width" : 1920, "height" : 1080, "path" : "/Streaming/Channels/1" },
+                { "name" : "low_res",  "width" : 640,  "height" : 360,  "path" : "/Streaming/Channels/2" }
             ]
         },
         {
-            "name"     : "cat_flap",
+            "name"     : "side_of_potting_shed",
             "username" : "admin",
             "password" : "",
-            "ip"       : "192.168.0.116",
+            "ip"       : "192.168.0.123",
             "port"     : 554,
             "streams"  : [
                 { "name" : "high_res", "width" : 1920, "height" : 1080, "path" : "/Streaming/Channels/1", "vtag" : "hvc1" },
@@ -99,34 +101,10 @@
             ]
         },
         {
-            "name"     : "orangery_roof",
-            "username" : "admin",
-            "password" : "",
-            "ip"       : "192.168.0.117",
-            "port"     : 554,
-            "streams"  : [
-                { "name" : "high_res", "width" : 1920, "height" : 1080, "path" : "/profile0", "vtag" : "hvc1" },
-                { "name" : "low_res",  "width" : 640,  "height" : 360,  "path" : "/profile1", "vtag" : "hvc1" }
-            ]
-        },
-        {
             "name"              : "shed",
             "username"          : "admin",
             "password"          : "",
             "ip"                : "192.168.0.118",
-            "port"              : 554,
-            "onvif_port"        : 8080,
-            "reboot_on_failure" : true,
-            "streams"  : [
-                { "name" : "high_res", "width" : 1920, "height" : 1080, "path" : "/11", "vtag" : "hvc1" },
-                { "name" : "low_res",  "width" : 640,  "height" : 360,  "path" : "/22", "vtag" : "hvc1", "aspect" : "640:360" }
-            ]
-        },
-        {
-            "name"              : "footpath",
-            "username"          : "admin",
-            "password"          : "",
-            "ip"                : "192.168.0.119",
             "port"              : 554,
             "onvif_port"        : 8080,
             "reboot_on_failure" : true,
@@ -180,10 +158,21 @@
             ]
         },
         {
-            "name"     : "side_of_potting_shed",
+            "name"     : "kitchen",
             "username" : "admin",
             "password" : "",
-            "ip"       : "192.168.0.123",
+            "ip"       : "192.168.0.111",
+            "port"     : 554,
+            "streams"  : [
+                { "name" : "high_res", "width" : 1920, "height" : 1080, "path" : "/11" },
+                { "name" : "low_res",  "width" : 640,  "height" : 360,  "path" : "/22", "aspect" : "640:360" }
+            ]
+        },
+        {
+            "name"     : "cat_flap",
+            "username" : "admin",
+            "password" : "",
+            "ip"       : "192.168.0.116",
             "port"     : 554,
             "streams"  : [
                 { "name" : "high_res", "width" : 1920, "height" : 1080, "path" : "/Streaming/Channels/1", "vtag" : "hvc1" },
@@ -191,14 +180,25 @@
             ]
         },
         {
-            "name"     : "front_down_road",
+            "name"     : "downstairs_hallway",
             "username" : "admin",
             "password" : "",
-            "ip"       : "192.168.0.124",
+            "ip"       : "192.168.0.114",
             "port"     : 554,
             "streams"  : [
-                { "name" : "high_res", "width" : 2880, "height" : 1620, "path" : "/avstream/channel=1/stream=0.sdp", "vtag" : "hvc1" },
-                { "name" : "low_res",  "width" : 640,  "height" : 360,  "path" : "/avstream/channel=1/stream=1.sdp", "vtag" : "hvc1", "aspect" : "640:360" }
+                { "name" : "high_res", "width" : 1920, "height" : 1080, "path" : "/11" },
+                { "name" : "low_res",  "width" : 640,  "height" : 360,  "path" : "/22", "aspect" : "640:360" }
+            ]
+        },
+        {
+            "name"     : "orangery_roof",
+            "username" : "admin",
+            "password" : "",
+            "ip"       : "192.168.0.117",
+            "port"     : 554,
+            "streams"  : [
+                { "name" : "high_res", "width" : 1920, "height" : 1080, "path" : "/profile0", "vtag" : "hvc1" },
+                { "name" : "low_res",  "width" : 640,  "height" : 360,  "path" : "/profile1", "vtag" : "hvc1" }
             ]
         }
     ]
