@@ -71,7 +71,7 @@ router.get('/console', ensureLoggedIn, function(request, response, next) {
 });
 
 router.get('/snapshots', ensureLoggedIn, function(request, response, next) {
-    response.render('snapshots', { snapshots_dir: config.get('snapshots_dir') });
+    response.render('browse_snapshots', { snapshots_dir: config.get('snapshots_dir') });
 });
 
 router.get(/^.*$/, ensureLoggedIn, function(request, response, next) {

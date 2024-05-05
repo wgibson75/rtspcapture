@@ -147,7 +147,7 @@ function createSnapshotSummary(name, timestamp, snapshots) {
         entries.push({ image: imageUrl, video: videoUrl, pos: position });
     });
 
-    var template = fs.readFileSync('views/snap.ejs', 'utf-8');
+    var template = fs.readFileSync('views/snapshot.ejs', 'utf-8');
     var html     = ejs.render (template , { entries: entries });
     fs.writeFileSync(file, html, 'utf8');
 

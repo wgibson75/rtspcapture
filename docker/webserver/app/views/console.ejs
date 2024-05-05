@@ -9,6 +9,10 @@
       const VIDEO_WIDTH = '25%';
       const CAPTURE_DIR = '<%= capture_dir %>';
 
+      var cameras = [];
+      <% cameras.forEach(name => { %>cameras.push("<%= name %>");
+      <% }); %>
+
       var cameras = '<%= cameras %>'.split(',');
 
       cameras.forEach(function(name) {
