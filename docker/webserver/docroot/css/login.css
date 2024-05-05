@@ -1,13 +1,13 @@
 body {
   background-color: black;
   color: yellow;
-  font-size: 30pt;
+  font-size: 20pt;
 }
 
 table {
   border-spacing: 20px;
   margin: auto;
-  font-size: 30pt;
+  font-size: 20pt;
 }
 
 td.message {
@@ -18,5 +18,5 @@ td.message {
 input, button {
   background-color: #333333;
   color: yellow;
-  font-size: 30pt;
+  font-size: 20pt;
 }
