@@ -94,11 +94,104 @@ Follow these steps to install Docker and Docker Compose on your Raspberry Pi:
 sudo chmod +x /usr/local/bin/docker-compose</pre>
 </ol>
 
-#### Step 3: Install the RTSP Capture CCTV System
+#### Step 3: Setup Use of the External USB Drive
+
+Follow these steps to setup use of an external USB drive for storing CCTV data:
+
+<ol>
+<li>On the Raspberry Pi, connect the USB drive and run the <b>lsblk</b> command to show all available disks:
+<br><i>For example:</i>
+<pre>will@sultan:~$ lsblk
+NAME        MAJ:MIN RM   SIZE RO TYPE MOUNTPOINTS
+loop0         7:0    0  33.7M  1 loop /snap/snapd/21467
+sda           8:0    0 476.9G  0 disk
+├─sda1        8:1    0   200M  0 part
+└─sda2        8:2    0 476.7G  0 part
+mmcblk0     179:0    0 119.1G  0 disk
+├─mmcblk0p1 179:1    0   512M  0 part /boot/firmware
+└─mmcblk0p2 179:2    0 118.6G  0 part /
+</pre>
+<p>This will give the device name of the external USB drive. In the example above, we've connected a 500Gb drive and the device name is shown as <b>sda</b>.</p>
+<li>Run the GNU Parted tool to partition this device (substituting <b>sda</b> with the name of your device):
+<pre>sudo parted -a optimal /dev/sda</pre>
+<li>From within GNU Parted, enter <b>print</b> to show what is on the disk (to check you are looking at the right disk!):<br>
+<i>For example:</i>
+<pre>Welcome to GNU Parted! Type 'help' to view a list of commands.
+(parted) print
+Model: Samsung Portable SSD T1 (scsi)
+Disk /dev/sda: 512GB
+Sector size (logical/physical): 512B/512B
+Partition Table: gpt
+Disk Flags:
+
+Number  Start   End    Size   File system  Name                  Flags
+ 1      20.5kB  210MB  210MB  fat32        EFI System Partition  boot, esp
+ 2      211MB   512GB  512GB                                     msftdata
+</pre>
+<li>Create a new <b>gpt</b> disk label using the <b>mklabel</b> command:
+<pre>(parted) mklabel
+New disk label type? gpt
+Warning: The existing disk label on /dev/sda will be destroyed and all data on this disk will be lost. Do you want to continue?
+Yes/No? Yes
+</pre>
+<li>Create a new ext4 partition that spans the whole disk using the <b>mkpart</b> command:
+<pre>(parted) mkpart
+Partition name?  []? data
+File system type?  [ext2]? ext4
+Start? 0%
+End? 100%
+</pre>
+<li>Confirm what is now on the disk using the <b>print</b> command:
+<pre>(parted) print
+Model: Samsung Portable SSD T1 (scsi)
+Disk /dev/sda: 512GB
+Sector size (logical/physical): 512B/512B
+Partition Table: gpt
+Disk Flags:
+
+Number  Start   End    Size   File system  Name  Flags
+ 1      33.6MB  512GB  512GB  ext4         data</pre>
+<li>Enter <b>quit</b> to exit GNU Parted.
+<li>Enter the following commands to firstly format the new partition and secondly to modify the reserved space to 1% of total disk space which is recommended for non system disks (substituting <b>sda</b> in both commands for the name of your device):<br>
+<i>For example:</i>
+<pre>sudo mkfs.ext4 /dev/sda1
+sudo tune2fs -m 1 /dev/sda1</pre>
+<li>Now determine the UUID of your disk as follows.<br>
+<i>For example:</i>
+<pre>will@sultan:~$ ls -l /dev/disk/by-uuid
+total 0
+lrwxrwxrwx 1 root root 15 Jan  1  1970 1305c13b-200a-49e8-8083-80cd01552617 -> ../../mmcblk0p2
+lrwxrwxrwx 1 root root 15 Jan  1  1970 F526-0340 -> ../../mmcblk0p1
+lrwxrwxrwx 1 root root 10 Jul 14 16:51 e2c1cf3e-c63b-4a72-85a6-4693a0dc2e0c -> ../../sda1
+</pre>
+<p>In the example above, the UUID of the partition we've just created (sda1) is <b>e2c1cf3e-c63b-4a72-85a6-4693a0dc2e0c</b>. Make a note of the UUID as you will need it in the next step.</p>
+<li>We now need to ensure this partition is automatically mounted when the Raspberry Pi boots. The first step involves creating a mount point on the file system that will be used to access the partition when it is mounted. Run the following command to create the /media/data mount point:
+<pre>sudo mkdir /media/data</pre>
+<li>Now edit the /etc/fstab file to configure automatically mounting the partition to this mount point:
+<pre>sudo vi /etc/fstab</pre>
+<li>Add a line that looks like this to the end of this file to mount the partition (substituting the UUID below for the UUID of your device):<br>
+<i>For example:</i>
+<pre>UUID=e2c1cf3e-c63b-4a72-85a6-4693a0dc2e0c /media/data     ext4    defaults        0       2</pre>
+<li>Save the modifications to /etc/fstab and reboot the Raspberry Pi to check the partition is automatically mounted. To do this, after rebooting, enter the following commands to query the available space on the partition (it should roughly match the size of disk you've connected):
+<pre>cd /media/data
+df -H .</pre>
+<i>For example:</i>
+<pre>will@sultan:~$ cd /media/data/
+will@sultan:/media/data$ df -H .
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/sda1       503G   29k  478G   1% /media/data
+</pre>
+<li>Your disk is now setup.
+</ol>
+
+#### Step 4: Install the RTSP Capture CCTV System
 
 Follow these steps to install the RTSP Capture CCTV System:
 
-TBD
-
+<ol>
+<li>On the Raspberry Pi, clone this repo:
+<pre>git clone https://github.com/wgibson75/rtspcapture.git</pre>
+<li>
+</ol>
 
 
