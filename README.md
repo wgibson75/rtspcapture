@@ -1,5 +1,7 @@
 # RTSP Capture CCTV System
 
+
+
 ## Introduction
 
 This is an RTSP based CCTV system that can be run on a Raspberry Pi 4 (or later). It works with any off the shelf CCTV camera that supports RTSP and converts the video streams from each camera into HLS streams. The HLS streams can be shown natively in Safari on any Apple device e.g. a Macbook, iPhone or iPad.
@@ -85,7 +87,7 @@ Follow these steps to install Docker and Docker Compose on your Raspberry Pi:
 <pre>sudo systemctl status docker</pre>
 <li>Add your user account to the Docker group:
 <pre>sudo usermod -aG docker ${USER}</pre>
-<li>Apply that changes by logging in and out:
+<li>Apply these changes by logging in and out:
 <pre>sudo su - ${USER}</pre>
 <li>Confirm your account is in the Docker group:
 <pre>groups ${USER}</pre>
@@ -189,9 +191,10 @@ Filesystem      Size  Used Avail Use% Mounted on
 Follow these steps to install the RTSP Capture CCTV System:
 
 <ol>
-<li>On the Raspberry Pi, clone this repo:
-<pre>git clone https://github.com/wgibson75/rtspcapture.git</pre>
-<li>
+<li>On the Raspberry Pi, clone this repository:
+<pre>cd ~
+git clone https://github.com/wgibson75/rtspcapture.git</pre>
+<li><i>To be continued...</i>
 </ol>
 
 
