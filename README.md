@@ -1,7 +1,5 @@
 # RTSP Capture CCTV System
 
-
-
 ## Introduction
 
 This is an RTSP based CCTV system that can be run on a Raspberry Pi 4 (or later). It works with any off the shelf CCTV camera that supports RTSP and converts the video streams from each camera into HLS streams. The HLS streams can be shown natively in Safari on any Apple device e.g. a Macbook, iPhone or iPad.
@@ -15,6 +13,8 @@ The system will capture at least 3 streams from each CCTV camera:
 3. A low definition stream for use in a video mosaic
 
 All AV content is written to a USB drive that is connected to the Rasperry Pi. It is recommended to use a solid state disk as this provides blistering performance when playing back content and seeking to times.
+
+![Live Mosaic](mosaic.jpg)
 
 ## Installation
 
@@ -188,13 +188,14 @@ Filesystem      Size  Used Avail Use% Mounted on
 
 #### Step 4: Install the RTSP Capture CCTV System
 
-Follow these steps to install the RTSP Capture CCTV System:
+Clone this repo on your Raspberry Pi and follow the instructions in this section to setup the system.
 
-<ol>
-<li>On the Raspberry Pi, clone this repository:
-<pre>cd ~
-git clone https://github.com/wgibson75/rtspcapture.git</pre>
-<li><i>To be continued...</i>
-</ol>
+<pre>git clone https://github.com/wgibson75/rtspcapture.git</pre>
+
+##### Configuring the System
+
+TBD
+
+##### Creating Server Keys
 
 
