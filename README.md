@@ -9,14 +9,16 @@ The philosophy of this system is that it requires very low CPU usage on the Rasp
 The system will capture at least 3 streams from each CCTV camera:
 
 1. A high definition live stream that is typically delayed by about 10 seconds due to HLS streaming latency
-2. A high definition stream that is continuously recorded
-3. A low definition stream for use in a video mosaic
+2. A low definition live stream for use in a video mosaic
+3. A high definition stream that is continuously recorded
 
 All AV content is written to a USB drive that is connected to the Rasperry Pi. It is recommended to use a solid state disk as this provides blistering performance when playing back content and seeking to times.
 
 ![Live Mosaic](mosaic.jpg)
 
 ## Installation
+
+> These installation steps are based on the Raspberry Pi 4 but they should work just as well on a Raspberry Pi 5.
 
 ### Pre-requisites
 
@@ -27,15 +29,9 @@ The following is hardware is recommended:
 * An external SSD drive
 * Ethernet cable for connecting the Pi to your network
 
-Where the SSD drive is concerned, it is reommended to use the biggest drive possible. A 4Tb drive will typically store 2 weeks worth or continous footage from 16 high definition CCTV cameras.
+Where the SSD drive is concerned, it is recommended to use the biggest drive possible. A 4Tb drive will typically store 2 weeks worth or continous footage from 16 high definition CCTV cameras.
 
-### Installation Steps
-
-These steps are based on the Raspberry Pi 4 but they should work just as well on a Raspberry Pi 5.
-
-Follow the steps below to install the system.
-
-#### Step 1: Install Ubuntu Server
+### Step 1: Install Ubuntu Server
 
 <ol>
 <li>Download the latest Ubuntu Server image for Raspberry Pi from here:<br><a href="https://ubuntu.com/download/raspberry-pi">https://ubuntu.com/download/raspberry-pi</a>
@@ -69,7 +65,7 @@ sudo apt install htop
 </pre>
 </ol>
 
-#### Step 2: Install Docker
+### Step 2: Install Docker
 
 Follow these steps to install Docker and Docker Compose on your Raspberry Pi:
 <ol>
@@ -186,16 +182,42 @@ Filesystem      Size  Used Avail Use% Mounted on
 <li>Your disk is now setup.
 </ol>
 
-#### Step 4: Install the RTSP Capture CCTV System
+### Step 4: Clone and Configure the System
 
-Clone this repo on your Raspberry Pi and follow the instructions in this section to setup the system.
+On your Raspberry Pi, clone the repo:
 
-<pre>git clone https://github.com/wgibson75/rtspcapture.git</pre>
+<pre>git clone https://github.com/wgibson75/rtspcapture.git
+</pre>
 
-##### Configuring the System
+Within the clone, all settings are maintained in a single JSON configuration file:
+
+<pre>./config/config.json</pre>
+
+#### Configuring CCTV Cameras
+
+Each camera is configured by adding a corresponding entry to the **cameras** field in the JSON configuration file. Each camera is defined with these fields:
+
+| Field | Description |
+| --- | --- |
+| name | Unique name of camera (avoid use of space characters) |
+| username | Username for authenticating |
+| password | Password for authenticating |
+| ip | Local IP address of the camera |
+| port | RTSP streaming port |
+| streams  | List of video streams supported by the camera - see below for how to configure these |
+
+Each camera video stream is configured with these fields:
+
+| Field | Description |
+| --- | --- |
+| name | Must be set to either **"low\_res"** or **"high\_res"** to identify either a low resolution or high reoslution video stream respectively. The low resolution stream is used in the video mosaic screen that shows a summary of all connected cameras. The high resolution stream will be shown when selecting the corresponding low resolution stream in the mosaic screen.
+| width | Width of video in pixels
+| height | Height of video in pixels
+| path | Path of the video stream on the CCTV camera. This will be specific to the make and model of camera used.
+| vtag (optional) | Should be set to **"hvc1"** to tag any video stream that supports HEVC. This will ensure the stream is correctly tagged as such when it is recorded.
+| aspect (optional) | Should be set to **"w:h"** to force a particular aspect ratio where **w** is the width in pixels and **h** is the height in pixels. This is mainly intended for use with badly behaved cameras that are outputing streams in the wrong aspect ratio. However, it can also be used to make fine adjustments to the resolution e.g. to ensure that all low resolution streams from all cameras are exactly the same resolution to ensure the video mosaic summary looks perfect.
+
+#### Creating Server Keys
 
 TBD
-
-##### Creating Server Keys
-
 
