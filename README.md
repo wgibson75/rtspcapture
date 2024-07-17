@@ -92,7 +92,7 @@ Follow these steps to install Docker and Docker Compose on your Raspberry Pi:
 sudo chmod +x /usr/local/bin/docker-compose</pre>
 </ol>
 
-#### Step 3: Setup Use of the External USB Drive
+### Step 3: Setup Use of the External USB Drive
 
 Follow these steps to setup use of an external USB drive for storing CCTV data:
 
@@ -194,6 +194,8 @@ Within the clone, all settings are maintained in a single JSON configuration fil
 <pre>./config/config.json</pre>
 
 #### Configuring CCTV Cameras
+
+This repo comes with a sample JSON configuration that I use for my CCTV cameras. This gives various examples of how I've configured my cameras.
 
 Each camera is configured by adding a corresponding entry to the **cameras** field in the JSON configuration file. Each camera is defined with these fields:
 
