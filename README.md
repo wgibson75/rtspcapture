@@ -197,7 +197,7 @@ Within the clone, all settings are maintained in a single JSON configuration fil
 
 This repo comes with a sample JSON configuration that I use for my CCTV cameras. This gives various examples of how I've configured my cameras.
 
-Each camera is configured by adding a corresponding entry to the **cameras** field in the JSON configuration file. Each camera is defined with these fields:
+Each camera is configured by adding a corresponding entry to the **cameras** array field in the JSON configuration file. Each camera is defined with these fields:
 
 | Field | Description |
 | --- | --- |
@@ -219,7 +219,44 @@ Each camera video stream is configured with these fields:
 | vtag (optional) | Should be set to **"hvc1"** to tag any video stream that supports HEVC. This will ensure the stream is correctly tagged as such when it is recorded.
 | aspect (optional) | Should be set to **"w:h"** to force a particular aspect ratio where **w** is the width in pixels and **h** is the height in pixels. This is mainly intended for use with badly behaved cameras that are outputing streams in the wrong aspect ratio. However, it can also be used to make fine adjustments to the resolution e.g. to ensure that all low resolution streams from all cameras are exactly the same resolution to ensure the video mosaic summary looks perfect.
 
-#### Creating Server Keys
+#### Creating the Self Signed Certificate, Private Key and Cookie Secret
 
-TBD
+This sytem includes a Node JS Web server that uses an encrypted HTTPS connection. To setup use of HTTPS you must create a self signed certificate and a private key.
 
+Login to your Raspberry Pi and run the following command to generate the self signed certificate and private key:
+<pre>openssl req -nodes -days 9999 -x509 -newkey rsa:4096 -keyout ssl-server.key -out ssl-server.crt</pre>
+This will create a certificate that uses a 4096 bit RSA key that will be valid for 9999 days. You will be asked a series of questions to generate this certificate - see example response below.
+
+*For example:*
+<pre>Country Name (2 letter code) [AU]:UKState or Province Name (full name) [Some-State]:HampshireLocality Name (eg, city) []:WinchesterOrganization Name (eg, company) [Internet Widgits Pty Ltd]:Land of CatOrganizational Unit Name (eg, section) []:NetworkCommon Name (e.g. server FQDN or YOUR name) []:212.105.123.45Email Address []:fred@hotmail.com
+</pre>
+
+Once your self signed certificate (ssl-server.crt) and private key (ssl-server.key) have been generated, copy them into the following location in your clone:
+
+<pre>./docker/webserver/auth</pre>
+
+You also need to generate a cookie secret that will be used to sign session cookies. Run the following command to randomly generate a 16 byte cookie secret:
+
+<pre>openssl rand -hex 16 > cookie-secret.txt</pre>
+
+Store the generated file (cookie-secret.txt) in the same location as your self signed certificate and private key.
+
+#### Building the System
+
+This system is entirely Docker based.
+
+Follow these steps to build and run the system:
+
+<ol>
+<li>Login to your Raspberry Pi.
+<li>Open the following directory in your clone:<br>
+<pre>./docker</pre>
+<p><i>For example:</i></p>
+<pre>cd ~/rtspcapture/docker</pre>
+<li>Run this to build everything with Docker Compose:
+<pre>docker-compose build</pre>
+<li>Once built, run this command to start up the system as a daemon:
+<pre>docker-compose up -d</pre>
+</ol>
+
+> Because we are using Docker Compose to start up the system, the system will automatically be started every time you boot your Raspberry Pi.
