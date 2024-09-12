@@ -8,7 +8,7 @@
   - [Step 4: Clone and Configure the System](#clone_and_config)
      - [Configuring CCTV Cameras](#config_cams)
      - [Creating the Self Signed Certificate, Private Key and Cookie Secret](#create_cert_and_keys)
- - [Step 5: Building the System](#build_system)
+  - [Step 5: Building the System](#build_system)
 - [Running the System](#run_system)
 
 <a name="intro"></a>
