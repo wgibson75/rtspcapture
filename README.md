@@ -46,8 +46,14 @@ Where the SSD drive is concerned, it is recommended to use the biggest drive pos
 </ul>
 
 <pre>
-## Set hostnamehostname: &lt;hostname&gt;
-## Configure default usersystem_info:  default_user:    name: &lt;username&gt;    ssh_authorized_keys:      - &lt;your SSH key&gt;
+## Set hostname
+hostname: &lt;hostname&gt;
+## Configure default user
+system_info:
+  default_user:
+    name: &lt;username&gt;
+    ssh_authorized_keys:
+      - &lt;your SSH key&gt;
     sudo: ALL=(ALL) NOPASSWD:ALL
 </pre>
 
@@ -99,7 +105,7 @@ touch /etc/docker/daemon.json
   "log-driver": "local"
 }
 </pre>
-> This ensures that log rotation is used on the log file created for each container *(log files are stored for each container here: /var/lib/docker/containers)*. If you do not do this then your Raspberry Pi will eventually run out of disk space as the logs will just keep growing and growing.
+<p><b>IMPORANT:</b> This ensures that log rotation is used on the log file created for each container <i>(log files are stored for each container here: /var/lib/docker/containers)</i>. If you do not do this then your Raspberry Pi will eventually run out of disk space as the logs will just keep growing and growing.</p>
 
 <li>Install Docker Compose:</li>
 <pre>sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
@@ -242,7 +248,13 @@ Login to your Raspberry Pi and run the following command to generate the self si
 This will create a certificate that uses a 4096 bit RSA key that will be valid for 9999 days. You will be asked a series of questions to generate this certificate - see example response below.
 
 *For example:*
-<pre>Country Name (2 letter code) [AU]:UKState or Province Name (full name) [Some-State]:HampshireLocality Name (eg, city) []:WinchesterOrganization Name (eg, company) [Internet Widgits Pty Ltd]:Land of CatOrganizational Unit Name (eg, section) []:NetworkCommon Name (e.g. server FQDN or YOUR name) []:212.105.123.45Email Address []:fred@hotmail.com
+<pre>Country Name (2 letter code) [AU]:UK
+State or Province Name (full name) [Some-State]:Hampshire
+Locality Name (eg, city) []:Winchester
+Organization Name (eg, company) [Internet Widgits Pty Ltd]:Land of Cat
+Organizational Unit Name (eg, section) []:Network
+Common Name (e.g. server FQDN or YOUR name) []:212.105.123.45
+Email Address []:fred@hotmail.com
 </pre>
 
 Once your self signed certificate (ssl-server.crt) and private key (ssl-server.key) have been generated, copy them into the following location in your clone:
