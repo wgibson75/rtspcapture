@@ -1,5 +1,17 @@
 # RTSP Capture CCTV System
 
+- [Introduction](#intro)  
+- [Installation](#install)
+  - [Step 1: Install Ubuntu Server](#install_ubuntu)
+  - [Step 2: Install Docker](#install_docker)
+  - [Step 3: Setup Use of the External USB Drive](#setup_external_drive)
+  - [Step 4: Clone and Configure the System](#clone_and_config)
+     - [Configuring CCTV Cameras](#config_cams)
+     - [Creating the Self Signed Certificate, Private Key and Cookie Secret](#create_cert_and_keys)
+ - [Step 5: Building the System](#build_system)
+- [Running the System](#run_system)
+
+<a name="intro"></a>
 ## Introduction
 
 This is an RTSP based CCTV system that can be run on a Raspberry Pi 4 (or later). It works with any off the shelf CCTV camera that supports RTSP and converts the video streams from each camera into HLS streams. The HLS streams can be shown natively in Safari on any Apple device e.g. a Macbook, iPhone or iPad.
@@ -16,6 +28,7 @@ All AV content is written to a USB drive that is connected to the Rasperry Pi. I
 
 ![Live Mosaic](mosaic.jpg)
 
+<a name="install"></a>
 ## Installation
 
 > These installation steps are based on the Raspberry Pi 4 but they should work just as well on a Raspberry Pi 5.
@@ -31,6 +44,7 @@ The following is hardware is recommended:
 
 Where the SSD drive is concerned, it is recommended to use the biggest drive possible. A 4Tb drive will typically store 2 weeks worth or continous footage from 16 high definition CCTV cameras.
 
+<a name="install_ubuntu"></a>
 ### Step 1: Install Ubuntu Server
 
 <ol>
@@ -71,6 +85,7 @@ sudo apt install htop
 </pre>
 </ol>
 
+<a name="install_docker"></a>
 ### Step 2: Install Docker
 
 Follow these steps to install Docker and Docker Compose on your Raspberry Pi:
@@ -112,6 +127,7 @@ touch /etc/docker/daemon.json
 sudo chmod +x /usr/local/bin/docker-compose</pre>
 </ol>
 
+<a name="setup_external_drive"></a>
 ### Step 3: Setup Use of the External USB Drive
 
 Follow these steps to setup use of an external USB drive for storing CCTV data:
@@ -202,6 +218,7 @@ Filesystem      Size  Used Avail Use% Mounted on
 <li>Your disk is now setup.
 </ol>
 
+<a name="clone_and_config"></a>
 ### Step 4: Clone and Configure the System
 
 On your Raspberry Pi, clone the repo:
@@ -213,6 +230,7 @@ Within the clone, all settings are maintained in a single JSON configuration fil
 
 <pre>./config/config.json</pre>
 
+<a name="config_cams"></a>
 #### Configuring CCTV Cameras
 
 This repo comes with a sample JSON configuration that I use for my CCTV cameras. This gives various examples of how I've configured my cameras.
@@ -239,6 +257,7 @@ Each camera video stream is configured with these fields:
 | vtag (optional) | Should be set to **"hvc1"** to tag any video stream that supports HEVC. This will ensure the stream is correctly tagged as such when it is recorded.
 | aspect (optional) | Should be set to **"w:h"** to force a particular aspect ratio where **w** is the width in pixels and **h** is the height in pixels. This is mainly intended for use with badly behaved cameras that are outputing streams in the wrong aspect ratio. However, it can also be used to make fine adjustments to the resolution e.g. to ensure that all low resolution streams from all cameras are exactly the same resolution to ensure the video mosaic summary looks perfect.
 
+<a name="create_cert_and_keys"></a>
 #### Creating the Self Signed Certificate, Private Key and Cookie Secret
 
 This sytem includes a Node JS Web server that uses an encrypted HTTPS connection. To setup use of HTTPS you must create a self signed certificate and a private key.
@@ -267,11 +286,12 @@ You also need to generate a cookie secret that will be used to sign session cook
 
 Store the generated file (cookie-secret.txt) in the same location as your self signed certificate and private key.
 
-#### Building the System
+<a name="build_system"></a>
+### Step 5: Building the System
 
 This system is entirely Docker based.
 
-Follow these steps to build and run the system:
+Follow these steps to build the system:
 
 <ol>
 <li>Login to your Raspberry Pi.
@@ -281,8 +301,23 @@ Follow these steps to build and run the system:
 <pre>cd ~/rtspcapture/docker</pre>
 <li>Run this to build everything with Docker Compose:
 <pre>docker-compose build</pre>
-<li>Once built, run this command to start up the system as a daemon application:
-<pre>docker-compose up -d</pre>
 </ol>
 
-> The use of Docker Compose means that once started, when you reboot your Raspberry Pi the system will automatically start up.
+If you make any changes to the [configuration of your system](#clone_and_config) then you will need to rebuild.
+
+<a name="run_system"></a>
+## Running the System
+
+Once built, the system can be started and stopped using Docker Compose.
+
+> The following commands must be run within the ./docker directory in your clone.
+
+To start the system run this command:
+
+<pre>docker-compose up -d</pre>
+
+To stop the system run this command:
+
+<pre>docker-compose down</pre>
+
+The use of Docker Compose means that once started, when you reboot your Raspberry Pi the system will automatically start up.
