@@ -87,6 +87,20 @@ Follow these steps to install Docker and Docker Compose on your Raspberry Pi:
 <pre>sudo su - ${USER}</pre>
 <li>Confirm your account is in the Docker group:
 <pre>groups ${USER}</pre>
+<li>Configure Docker's default logging driver to use the local logging driver.</li>
+<p>Create the following deamon.json file as root:</p>
+<pre>
+sudo su
+touch /etc/docker/daemon.json
+</pre>
+<p>Add this configuration to daemon.json:</p>
+<pre>
+{
+  "log-driver": "local"
+}
+</pre>
+> This ensures that log rotation is used on the log file created for each container *(log files are stored for each container here: /var/lib/docker/containers)*. If you do not do this then your Raspberry Pi will eventually run out of disk space as the logs will just keep growing and growing.
+
 <li>Install Docker Compose:</li>
 <pre>sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
 sudo chmod +x /usr/local/bin/docker-compose</pre>
@@ -255,8 +269,8 @@ Follow these steps to build and run the system:
 <pre>cd ~/rtspcapture/docker</pre>
 <li>Run this to build everything with Docker Compose:
 <pre>docker-compose build</pre>
-<li>Once built, run this command to start up the system as a daemon:
+<li>Once built, run this command to start up the system as a daemon application:
 <pre>docker-compose up -d</pre>
 </ol>
 
-> Because we are using Docker Compose to start up the system, the system will automatically be started every time you boot your Raspberry Pi.
+> The use of Docker Compose means that once started, when you reboot your Raspberry Pi the system will automatically start up.
