@@ -8,7 +8,8 @@
   - [Step 4: Clone and Configure the System](#clone_and_config)
      - [Configuring CCTV Cameras](#config_cams)
      - [Creating the Self Signed Certificate, Private Key and Cookie Secret](#create_cert_and_keys)
-  - [Step 5: Building the System](#build_system)
+  - [Step 5: Build the System](#build_system)
+- [Setting up Snapshot Triggers](#setup_snapshot_triggers)
 - [Running the System](#run_system)
 
 <a name="intro"></a>
@@ -287,7 +288,7 @@ You also need to generate a cookie secret that will be used to sign session cook
 Store the generated file (cookie-secret.txt) in the same location as your self signed certificate and private key.
 
 <a name="build_system"></a>
-### Step 5: Building the System
+### Step 5: Build the System
 
 This system is entirely Docker based.
 
@@ -304,6 +305,37 @@ Follow these steps to build the system:
 </ol>
 
 If you make any changes to the [configuration of your system](#clone_and_config) then you will need to rebuild.
+
+<a name="setup_snapshot_triggers"></a>
+## Setting up Snapshot Triggers
+
+This system supports snapshot triggers that are essentially HTTP requests (made to the Web server on port 8080) that will trigger the creation of snapshots from one or more cameras. These snapshots can then be viewed and selected to playback video from the corresponding camera at the time the snapshot was taken.
+
+For example, a snapshot request may look like this:
+
+<pre>http://icarus.local:8080/snapshot?n=shed&c=shed&c=shed_door&c=side_of_shed&c=side_of_shed_2&c=back_of_house&c=side_of_potting_shed</pre>
+
+Where:
+
+* icarus.local
+
+ Is the name of your Raspberry Pi on your local network.
+ 
+* n=*&lt;name of snapshot&gt;*
+
+ Specifies the name of the snapshot (in this example **shed**).
+
+* c=*&lt;name of camera&gt;*
+
+ Specifies the name of each camera to take a snapshot from. These are concatenated together with &amp; characters to form a multi value URL encoded field string.
+ 
+Snapshot requests can be made by any device on your network. This system includes Python scripts that can be run on a low cost Raspberry Pi Pico W device to make snapshot requests when a sensor is activated. These scripts are are located here:
+
+<pre>./pico-w-snapshot-triggers</pre>
+
+Two flavours of this script exist:
+1. A script for hooking the Pico W into a mains triggered relay that can be connected to an outside security light so when the light comes on the snapshot request is made
+2. A script for connecting the Pico W to a light dependent resister (LDR) that will trigger indirectly bsaed on the level of light when an outside security light is turned on
 
 <a name="run_system"></a>
 ## Running the System

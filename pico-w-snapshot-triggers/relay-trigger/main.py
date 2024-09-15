@@ -8,7 +8,7 @@ WIRELESS_SSID = 'love NZ'   # Wireless LAN SSID
 WIRELESS_PSWD = '' # Wireless LAN password
 
 # Snapshot request details
-SERVER_NAME   = 'pluto.local'
+SERVER_NAME   = 'icarus.local'
 SERVER_PORT   = 8080
 SNAPSHOT_ARGS = 'n=shed&c=shed&c=shed_door&c=side_of_shed&c=side_of_shed_2&c=back_of_house&c=side_of_potting_shed'
 SNAPSHOT_CMD  = '/snapshot?%s' % SNAPSHOT_ARGS
