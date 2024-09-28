@@ -1,4 +1,4 @@
-# RTSP Capture CCTV System for Raspberru Pi
+# RTSP Capture CCTV System for Raspberry Pi
 
 - [Introduction](#intro)  
 - [Installation](#install)
