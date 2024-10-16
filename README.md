@@ -9,7 +9,8 @@
      - [Configuring CCTV Cameras](#config_cams)
      - [Creating the Self Signed Certificate, Private Key and Cookie Secret](#create_cert_and_keys)
   - [Step 5: Build the System](#build_system)
-- [Setting up Snapshot Triggers](#setup_snapshot_triggers)
+- [Snapshot Triggers](#snapshot_triggers)
+  - [Setting up an LDR Trigger on a Pico W Device](#ldr_trigger_on_pico_w)
 - [Running the System](#run_system)
 
 <a name="intro"></a>
@@ -27,7 +28,7 @@ The system will capture at least 3 streams from each CCTV camera:
 
 All AV content is written to a USB drive that is connected to the Rasperry Pi. It is recommended to use a solid state disk as this provides blistering performance when playing back content and seeking to times.
 
-![Live Mosaic](mosaic.jpg)
+![Live Mosaic](images/mosaic.jpg)
 
 <a name="install"></a>
 ## Installation
@@ -306,8 +307,8 @@ Follow these steps to build the system:
 
 If you make any changes to the [configuration of your system](#clone_and_config) then you will need to rebuild.
 
-<a name="setup_snapshot_triggers"></a>
-## Setting up Snapshot Triggers
+<a name="snapshot_triggers"></a>
+## Snapshot Triggers
 
 This system supports snapshot triggers that are essentially HTTP requests (made to the Web server on port 8080) that will trigger the creation of snapshots from one or more cameras. These snapshots can then be viewed and selected to playback video from the corresponding camera at the time the snapshot was taken.
 
@@ -334,8 +335,50 @@ Snapshot requests can be made by any device on your network. This system include
 <pre>./pico-w-snapshot-triggers</pre>
 
 Two flavours of this script exist:
-1. A script for hooking the Pico W into a mains triggered relay that can be connected to an outside security light so when the light comes on the snapshot request is made
-2. A script for connecting the Pico W to a light dependent resister (LDR) that will trigger indirectly bsaed on the level of light when an outside security light is turned on
+1. A script for hooking the Pico W into a mains triggered relay that can be connected to an outside security light so when the light comes on the snapshot request is made.
+2. A script for connecting the Pico W to a Light Dependent Resister (LDR) that will trigger indirectly based on the level of light when an outside security light is turned on.
+
+<a name="ldr_trigger_on_pico_w"></a>
+### Setting up an LDR Trigger on a Pico W Device
+
+This trigger involves connecting a Light Dependent Resistor to a Pico W device as described in the wiring diagram below.
+
+![Pico W LDR wiring](images/pico-w-ldr-wiring.jpg)
+
+The photos below show how this all looked with my setup at home:
+
+![My Pico W LDR setup](images/pico-w-ldr.jpg)
+
+Once you have physically set this up, follow these steps to install the trigger software:
+
+<ol>
+<li>Open the following Python script in an editor:
+<pre>./pico-w-snapshot-triggers/light-sensor-trigger/main.py</pre>
+<li>Set the following global variables at the top of this script as follows:
+<table>
+<tr>
+<td>WIRELESS_SSID</td>
+<td>The SSID of your wireless network.</td>
+</tr>
+<tr>
+<td>WIRELESS_PSWD</td>
+<td>The password of your wireless network.</td>
+</tr>
+<tr>
+<td>SERVER_NAME</td>
+<td><p>The hostname of your Raspberry Pi on your network.</p><p><i>For example:</i><br>If the hostname is <b>icarus</b> then you will need to add the <b>.local</b> suffix to provide the fully qualified hostname i.e. <b>icarus.local</b>.</p></td>
+</tr>
+<tr><td>SNAPSHOT_ARGS</td>
+<td><p>The cameras to trigger a snapshot from as a URL encoded parameter string.</p>
+<p><i>For example:</i><br>If you had two cameras that you wanted to take a snapshot from called <b>front_of_house</b> and <b>front_down_road</b> (as defined in config.json) and you wanted to call this snapshot <b>driveway</b> then you would specify the following snapshot arguments:
+<pre>
+n=driveway&c=front_of_house&c=front_down_road
+</pre>
+</td>
+</tr>
+</table>
+<li>Then load the main.py script into your Pico W using the <a href="https://thonny.org">Thonny IDE</a>.
+</ol>
 
 <a name="run_system"></a>
 ## Running the System
