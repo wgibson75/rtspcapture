@@ -345,11 +345,11 @@ Two flavours of this script exist:
 <a name="ldr_trigger_on_pico_w"></a>
 ### Setting up an LDR Trigger on a Pico W Device
 
-This trigger involves connecting a Light Dependent Resistor to a Pico W device as described in the wiring diagram below.
+This trigger involves connecting a Light Dependent Resistor to a Pico W device as shown in the wiring diagram below.
 
 ![Pico W LDR wiring](images/pico-w-ldr-wiring.jpg)
 
-The photos below show how this all looked with my setup at home:
+The photos below show how this all looked with my setup at home (I heat seal wrapped the device after soldering the connections):
 
 ![My Pico W LDR setup](images/pico-w-ldr.jpg)
 
@@ -383,6 +383,27 @@ n=driveway&c=front_of_house&c=front_down_road
 </table>
 <li>Then load the main.py script into your Pico W using the <a href="https://thonny.org">Thonny IDE</a>.
 </ol>
+
+In terms of how I have this setup at home, I just poke the LDR sensor through the shutters on the windows at the front of my house (see photo below). I have a security light mounted directly outside and this setup works 100% reliably with no false triggers.
+
+![Positioning of LDR sensor for snapshot trigger](images/pico-w-ldr-sensor-positioning.jpg)
+
+#### Adjustments to the Light Trigger Sensitivity
+
+You many need to adjust the sensitivity of the light trigger depending on your security light and exactly where you have placed the LDR sensor. If this is necessary then the following global variables at the top of the main.py script can be set accordingly:
+
+<table>
+<tr>
+<td>LIGHT_CHANGE_THRESHOLD</td>
+<td>This specifies the percentage difference in light level that constitutes a change with the security light turning on. If you are getting false triggers then increase this value. If you are failing to get all or some triggers then lower this value.</td>
+</tr>
+<tr>
+<td>DEBOUNCE_TIME_MS</td>
+<td>This specifies the period of time in milliseconds that must elapse before the next trigger can be made. It is very unlikely that you'll need to change this but this is designed to compensate for rapid fluctuations in light levels that might otherwise cause false triggers.</td>
+</tr>
+</table>
+
+
 
 <a name="run_system"></a>
 ## Running the System
