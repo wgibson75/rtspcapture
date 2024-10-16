@@ -312,6 +312,10 @@ If you make any changes to the [configuration of your system](#clone_and_config)
 
 This system supports snapshot triggers that are essentially HTTP requests (made to the Web server on port 8080) that will trigger the creation of snapshots from one or more cameras. These snapshots can then be viewed and selected to playback video from the corresponding camera at the time the snapshot was taken.
 
+The following screenshot shows an example of snapshot trigger taken from four of my cameras.
+
+![Snapshot example](images/snapshot-example.jpg)
+
 For example, a snapshot request may look like this:
 
 <pre>http://icarus.local:8080/snapshot?n=shed&c=shed&c=shed_door&c=side_of_shed&c=side_of_shed_2&c=back_of_house&c=side_of_potting_shed</pre>
