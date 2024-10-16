@@ -312,7 +312,7 @@ If you make any changes to the [configuration of your system](#clone_and_config)
 
 This system supports snapshot triggers that are essentially HTTP requests (made to the Web server on port 8080) that will trigger the creation of snapshots from one or more cameras. These snapshots can then be viewed and selected to playback video from the corresponding camera at the time the snapshot was taken.
 
-The following screenshot shows an example of snapshot trigger taken from four of my cameras.
+The following screenshot shows an example of a snapshot trigger taken from four of my cameras.
 
 ![Snapshot example](images/snapshot-example.jpg)
 
