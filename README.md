@@ -11,6 +11,7 @@
   - [Step 5: Build the System](#build_system)
 - [Snapshot Triggers](#snapshot_triggers)
   - [Setting up an LDR Trigger on a Pico W Device](#ldr_trigger_on_pico_w)
+     - [Adjustments to the Light Trigger Sensitivity](#adjustments_to_ldr_trigger_sensitivity)
 - [Running the System](#run_system)
 
 <a name="intro"></a>
@@ -388,6 +389,7 @@ In terms of how I have this setup at home, I just poke the LDR sensor through th
 
 ![Positioning of LDR sensor for snapshot trigger](images/pico-w-ldr-sensor-positioning.jpg)
 
+<a name="adjustments_to_ldr_trigger_sensitivity"></a>
 #### Adjustments to the Light Trigger Sensitivity
 
 You many need to adjust the sensitivity of the light trigger depending on your security light and exactly where you have placed the LDR sensor. If this is necessary then the following global variables at the top of the main.py script can be set accordingly:
