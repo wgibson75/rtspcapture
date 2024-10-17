@@ -423,3 +423,34 @@ To stop the system run this command:
 <pre>docker-compose down</pre>
 
 The use of Docker Compose means that once started, when you reboot your Raspberry Pi the system will automatically start up.
+
+<a name="access_system"></a>
+## Accessing the Running the System
+
+Once the system is running, it can be accessed on port 8443 using the Safari web browser:
+
+*For example:*
+<pre>
+https://icarus.local:8443
+</pre>
+
+The system will ask you to login:
+
+<img src= "images/login.jpg" alt="Login screen" style="border: 2px solid grey;">
+
+The default login credentials are:
+
+<table>
+<tr>
+<td><b>username</b></td>
+<td>monkey</td>
+</tr>
+<tr>
+<td><b>password</b></td>
+<td>monkeypoo</td>
+</tr>
+</table>
+
+Once logged in, you will see the home page that provides access to all features:
+
+<img src= "images/home_page.jpg" alt="Home page" style="border: 2px solid grey;">
