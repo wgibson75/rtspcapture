@@ -13,6 +13,7 @@
   - [Setting up an LDR Trigger on a Pico W Device](#ldr_trigger_on_pico_w)
      - [Adjustments to the Light Trigger Sensitivity](#adjustments_to_ldr_trigger_sensitivity)
 - [Running the System](#run_system)
+- [Accessing the Running System](#access_system)
 
 <a name="intro"></a>
 ## Introduction
@@ -436,7 +437,7 @@ https://icarus.local:8443
 
 The system will ask you to login:
 
-<img src= "images/login.jpg" alt="Login screen" style="border: 2px solid grey;">
+![Login screen](images/login.jpg)
 
 The default login credentials are:
 
@@ -453,4 +454,4 @@ The default login credentials are:
 
 Once logged in, you will see the home page that provides access to all features:
 
-<img src= "images/home_page.jpg" alt="Home page" style="border: 2px solid grey;">
+![Home page](images/home_page.jpg)
