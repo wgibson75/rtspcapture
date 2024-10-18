@@ -12,6 +12,7 @@
 - [Snapshot Triggers](#snapshot_triggers)
   - [Setting up an LDR Trigger on a Pico W Device](#ldr_trigger_on_pico_w)
      - [Adjustments to the Light Trigger Sensitivity](#adjustments_to_ldr_trigger_sensitivity)
+  - [Setting up a Mains Relay Trigger on a Pico W Device](#mains_relay_trigger_on_pico_w)
 - [Running the System](#run_system)
 - [Accessing the Running System](#access_system)
 
@@ -341,8 +342,8 @@ Snapshot requests can be made by any device on your network. This system include
 <pre>./pico-w-snapshot-triggers</pre>
 
 Two flavours of this script exist:
-1. A script for hooking the Pico W into a mains triggered relay that can be connected to an outside security light so when the light comes on the snapshot request is made.
-2. A script for connecting the Pico W to a Light Dependent Resister (LDR) that will trigger indirectly based on the level of light when an outside security light is turned on.
+1. A script for connecting the Pico W to a Light Dependent Resister (LDR) that will trigger indirectly based on the level of light when an outside PIR security light is triggered.
+2. A script for hooking the Pico W into a mains triggered relay that can be connected to an outside security light so when the light comes on the snapshot request is made.
 
 <a name="ldr_trigger_on_pico_w"></a>
 ### Setting up an LDR Trigger on a Pico W Device
@@ -406,7 +407,12 @@ You many need to adjust the sensitivity of the light trigger depending on your s
 </tr>
 </table>
 
+<a name="mains_relay_trigger_on_pico_w"></a>
+### Setting up a Mains Relay Trigger on a Pico W Device
 
+This trigger involves connecting a mains relay to a Pico W device as shown in the wiring diagram below.
+
+![Pico W main relay wiring](images/pico-w-relay-wiring.jpg)
 
 <a name="run_system"></a>
 ## Running the System
