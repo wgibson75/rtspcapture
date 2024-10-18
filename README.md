@@ -13,6 +13,7 @@
   - [Setting up an LDR Trigger on a Pico W Device](#ldr_trigger_on_pico_w)
      - [Adjustments to the Light Trigger Sensitivity](#adjustments_to_ldr_trigger_sensitivity)
   - [Setting up a Mains Relay Trigger on a Pico W Device](#mains_relay_trigger_on_pico_w)
+     - [Adjustments to the Mains Relay Trigger Sensitivity](#adjustments_to_mains_relay_trigger_sensitivity)
 - [Running the System](#run_system)
 - [Accessing the Running System](#access_system)
 
@@ -315,11 +316,11 @@ If you make any changes to the [configuration of your system](#clone_and_config)
 
 This system supports snapshot triggers that are essentially HTTP requests (made to the Web server on port 8080) that will trigger the creation of snapshots from one or more cameras. These snapshots can then be viewed and selected to playback video from the corresponding camera at the time the snapshot was taken.
 
-The following screenshot shows an example of a snapshot trigger taken from four of my cameras.
+The following screenshot shows an example of a snapshot taken from some of my cameras.
 
 ![Snapshot example](images/snapshot-example.jpg)
 
-For example, a snapshot request may look like this:
+For example, a snapshot request looks like this:
 
 <pre>http://icarus.local:8080/snapshot?n=shed&c=shed&c=shed_door&c=side_of_shed&c=side_of_shed_2&c=back_of_house&c=side_of_potting_shed</pre>
 
@@ -336,19 +337,20 @@ Where:
 * c=*&lt;name of camera&gt;*
 
  Specifies the name of each camera to take a snapshot from. These are concatenated together with &amp; characters to form a multi value URL encoded field string.
- 
-Snapshot requests can be made by any device on your network. This system includes Python scripts that can be run on a low cost Raspberry Pi Pico W device to make snapshot requests when a sensor is activated. These scripts are are located here:
+
+Snapshot requests can be made by any device on your network. This system includes some Python scripts that can be run on a low cost Raspberry Pi Pico W device to make snapshot requests over your wireless network when a sensor is activated. These scripts are located here:
 
 <pre>./pico-w-snapshot-triggers</pre>
 
-Two flavours of this script exist:
-1. A script for connecting the Pico W to a Light Dependent Resister (LDR) that will trigger indirectly based on the level of light when an outside PIR security light is triggered.
-2. A script for hooking the Pico W into a mains triggered relay that can be connected to an outside security light so when the light comes on the snapshot request is made.
+Two flavours of these scripts exist:
+
+1. A script for connecting the Pico W to a Light Dependent Resister (LDR) that will trigger a snapshot when the level of light exceeds a threshold. The LDR sensor can be placed close to an outside PIR security light to trigger a snapshot when the light is activated.
+2. A script for connecting the Pico W to a mains powered relay. The relay is connected to the power supply of a security light to trigger a snapshot when the light comes on.
 
 <a name="ldr_trigger_on_pico_w"></a>
 ### Setting up an LDR Trigger on a Pico W Device
 
-This trigger involves connecting a Light Dependent Resistor to a Pico W device as shown in the wiring diagram below.
+This trigger involves connecting a Light Dependent Resistor to a Pico W device as shown in the wiring diagram below. With the LDR sensor suitably placed, this allows the Pico W to detect when an outside security light is activated and send a snapshot request over your wireless network.
 
 ![Pico W LDR wiring](images/pico-w-ldr-wiring.jpg)
 
@@ -377,7 +379,7 @@ Once you have physically set this up, follow these steps to install the trigger 
 </tr>
 <tr><td>SNAPSHOT_ARGS</td>
 <td><p>The cameras to trigger a snapshot from as a URL encoded parameter string.</p>
-<p><i>For example:</i><br>If you had two cameras that you wanted to take a snapshot from called <b>front_of_house</b> and <b>front_down_road</b> (as defined in config.json) and you wanted to call this snapshot <b>driveway</b> then you would specify the following snapshot arguments:
+<p><i>For example:</i><br>If you had two cameras that you wanted to take a snapshot from called <b>front_of_house</b> and <b>front_down_road</b> (<a href="#config_cams">as defined in config.json</a>) and you wanted to call this snapshot <b>driveway</b> then you would specify the following snapshot arguments:
 <pre>
 n=driveway&c=front_of_house&c=front_down_road
 </pre>
@@ -410,9 +412,59 @@ You many need to adjust the sensitivity of the light trigger depending on your s
 <a name="mains_relay_trigger_on_pico_w"></a>
 ### Setting up a Mains Relay Trigger on a Pico W Device
 
-This trigger involves connecting a mains relay to a Pico W device as shown in the wiring diagram below.
+This trigger involves connecting a mains relay to a Pico W device as shown in the wiring diagram below. The power supply of the relay is connected to the power supply of the security light. This allows the Pico W to detect when the security light comes on and send a snapshot request over your wireless network.
 
 ![Pico W main relay wiring](images/pico-w-relay-wiring.jpg)
+
+Once you have physically set this up, follow these steps to install the trigger software:
+
+<ol>
+<li>Open the following Python script in an editor:
+<pre>./pico-w-snapshot-triggers/relay-trigger/main.py</pre>
+<li>Set the following global variables at the top of this script as follows:
+<table>
+<tr>
+<td>WIRELESS_SSID</td>
+<td>The SSID of your wireless network.</td>
+</tr>
+<tr>
+<td>WIRELESS_PSWD</td>
+<td>The password of your wireless network.</td>
+</tr>
+<tr>
+<td>SERVER_NAME</td>
+<td><p>The hostname of your Raspberry Pi on your network.</p><p><i>For example:</i><br>If the hostname is <b>icarus</b> then you will need to add the <b>.local</b> suffix to provide the fully qualified hostname i.e. <b>icarus.local</b>.</p></td>
+</tr>
+<tr><td>SNAPSHOT_ARGS</td>
+<td><p>The cameras to trigger a snapshot from as a URL encoded parameter string.</p>
+<p><i>For example:</i><br>If you had six cameras that you wanted to take a snapshot from called <b>shed</b>, <b>shed_door</b>, <b>side_of_shed</b>, <b>side_of_shed_2</b>, <b>back_of_house</b> and <b>side_of_potting_shed</b> (<a href="#config_cams">as defined in config.json</a>) and you wanted to call this snapshot <b>shed</b> then you would specify the following snapshot arguments:
+<pre>
+n=shed&c=shed&c=shed_door&c=side_of_shed&c=side_of_shed_2&c=back_of_house&c=side_of_potting_shed
+</pre>
+</td>
+</tr>
+</table>
+<li>Then load the main.py script into your Pico W using the <a href="https://thonny.org">Thonny IDE</a>.
+</ol>
+
+<a name="adjustments_to_mains_relay_trigger_sensitivity"></a>
+#### Adjustments to the Mains Relay Trigger Sensitivity
+
+Before I set this up myself I had no idea just how much digital interference you get due to the proximity of mains electrical circuitry. This interference will manifest itself as false readings of the GPIO pin the relay is connected to. This means that multiple readings must be taken to accurately know the state of the relay.
+
+The following global variables at the top of the main.py script can be adjusted if you experience false triggers:
+
+<table>
+<tr>
+<td>STATE_NUM_POLLS</td>
+<td>This specifies the number of polls that are used to determine the state of the relay. Each poll will check the state of the GPIO pin that the relay is connected to; an average reading is taken. The higher the number, the less false positives you'll get due to digital interference but the slower it will take to trigger a snapshot.
+</td>
+</tr>
+<tr>
+<td>STATE_READ_INTERVAL_MS</td>
+<td>This specifies the interval in milliseconds between polls.</td>
+</tr>
+</table>
 
 <a name="run_system"></a>
 ## Running the System
