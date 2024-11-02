@@ -16,6 +16,9 @@
     </script>
   </head>
   <body>
+    <div class="recordings_status">Recordings:
+      <b class="recordings_status_bold"><%= total_record_time %> days</b>
+    </div>
     <form id="auth_form" method="post">
       <input type="hidden" name="_csrf" value="<%= csrfToken %>">
     </form>

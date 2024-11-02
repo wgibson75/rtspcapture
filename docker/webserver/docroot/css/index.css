@@ -41,3 +41,15 @@ td.auth {
   background-color: #222222;
   color: #999900;
 }
+
+div.recordings_status {
+  font-size: 12pt;
+  color: #990000;
+  position: absolute;
+  bottom:10px;
+  left:20px;
+}
+
+b.recordings_status_bold {
+  color: #ff0000;
+}
