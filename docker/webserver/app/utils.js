@@ -1,4 +1,6 @@
-const fs = require('graceful-fs');
+const fs     = require('graceful-fs');
+const path   = require('path');
+const config = require('./config');
 
 module.exports = {
     sortFilesByName: function(fitems) {
@@ -42,5 +44,42 @@ module.exports = {
     getTimestampNow: function() {
         let date = new Date()
         return date.getTime();
+    },
+
+    getTotalRecordTimeDays: function() {
+        let time = 0
+        let capture_root = path.join(config.get('root_path'), config.get('capture_dir'));
+
+        config.get('cameras').forEach((camera) => {
+            let camera_path = path.join(capture_root, camera.name);
+
+            if (!fs.existsSync(camera_path)) return; // Camera directory doesn't exit
+
+            let files = [];
+            let regex = new RegExp('.*_\d+\..*'); // Match only numbered recording files
+            fs.readdirSync(camera_path).forEach((filename) => {
+                if (!filename.match(regex)) {
+                    return;
+                }
+                files.push(filename);
+            });
+
+            if (files.length == 0) return; // No camera recordings
+
+            let oldest_file = files.sort().shift();
+            let fstat = fs.statSync(path.join(camera_path, oldest_file));
+
+            // Creation time is good enough but note that if checkmoov has fixed
+            // the recording then this will be later than the real creation time
+            if ((time == 0) || (fstat.ctimeMs < time))
+            {
+                time = fstat.ctimeMs;
+            }
+        });
+
+        if (time == 0) return 0;
+
+        let now = new Date().getTime();
+        return ((now - time) / (1000 * 24 * 60 * 60)).toFixed(2);
     }
 };

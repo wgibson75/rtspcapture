@@ -78,7 +78,9 @@ router.get(/^.*$/, ensureLoggedIn, function(request, response, next) {
     logger.info('requestHandler_content');
 
     if (request.url == '/') {
-        return response.render('index');
+        num_days = utils.getTotalRecordTimeDays()
+        logger.info('Total record time: %f', num_days);
+        return response.render('index', { total_record_time: num_days });
     }
     handleContent_all(request, response);
 });
