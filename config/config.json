@@ -40,11 +40,11 @@
             "port"     : 554,
             "streams"  : [
                 {
-                    "name" : "high_res",
-                    "width" : 1920,
-                    "height" : 1080,
-                    "path" : "/Streaming/Channels/1",
-                    "vtag" : "hvc1",
+                    "name"          : "high_res",
+                    "width"         : 1920,
+                    "height"        : 1080,
+                    "path"          : "/Streaming/Channels/1",
+                    "vtag"          : "hvc1",
                     "include_audio" : true
                 },
                 { "name" : "low_res",  "width" : 640,  "height" : 360,  "path" : "/Streaming/Channels/2", "vtag" : "hvc1" }
