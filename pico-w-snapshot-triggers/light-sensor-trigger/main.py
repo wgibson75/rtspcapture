@@ -10,7 +10,7 @@ WIRELESS_PSWD = '' # Wireless LAN password
 # Snapshot request details
 SERVER_NAME   = 'icarus.local'
 SERVER_PORT   = 8080
-SNAPSHOT_ARGS = 'n=driveway&c=front_of_house'
+SNAPSHOT_ARGS = 'n=driveway&c=front_of_house&c=driveway'
 SNAPSHOT_CMD  = '/snapshot?%s' % SNAPSHOT_ARGS
 
 PHOTO_PIN                      = 26    # GPIO pin to detect light level
