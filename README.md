@@ -262,6 +262,8 @@ Each camera video stream is configured with these fields:
 | path | Path of the video stream on the CCTV camera. This will be specific to the make and model of camera used.
 | vtag (optional) | Should be set to **"hvc1"** to tag any video stream that supports HEVC. This will ensure the stream is correctly tagged as such when it is recorded.
 | aspect (optional) | Should be set to **"w:h"** to force a particular aspect ratio where **w** is the width in pixels and **h** is the height in pixels. This is mainly intended for use with badly behaved cameras that are outputing streams in the wrong aspect ratio. However, it can also be used to make fine adjustments to the resolution e.g. to ensure that all low resolution streams from all cameras are exactly the same resolution to ensure the video mosaic summary looks perfect.
+| include_audio (optional) | A Boolean flag that indicates whether to include audio from this stream (the default is false).
+| live_audio_advance_secs (optional) | Only applies to live streaming. Specifies the number of seconds to advance audio by to workaround any audio delay sync issues.
 
 <a name="create_cert_and_keys"></a>
 #### Creating the Self Signed Certificate, Private Key and Cookie Secret

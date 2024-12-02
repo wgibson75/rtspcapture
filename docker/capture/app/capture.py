@@ -61,11 +61,6 @@ class StreamCapture(ABC):
         self.kill()
         self._start()
 
-    def get_map_arg(self):
-        # Only capture the video stream unless config specifies mapping
-        return ('-map', '0:0') if (self.stream.map == None) else ('-map', self.stream.map)
-
-
 class LiveStreamCapture(StreamCapture):
     def __init__(self, cam, stream):
         super().__init__(cam, stream)
@@ -82,15 +77,30 @@ class LiveStreamCapture(StreamCapture):
         self._start()
 
     def _start(self):
+        url = 'rtsp://%s:%s@%s:%d%s' % (self.username, self.password, self.ip, self.port, self.stream.path)
         cmd = []
         cmd.append(('ffmpeg'))
         cmd.extend(('-fflags', 'nobuffer'))
         cmd.extend(('-rtsp_transport', 'tcp'))
-        cmd.extend(('-i', 'rtsp://%s:%s@%s:%d%s' % (self.username, self.password, self.ip, self.port, self.stream.path)))
-        cmd.extend(('-c:v', 'copy'))     # Copy the video stream
+        cmd.extend(('-i', url))
+
         if (self.stream.include_audio):
-            cmd.extend(('-c:a', 'copy')) # Copy the audio stream if required
-        cmd.extend(super().get_map_arg())
+            if (self.stream.live_audio_advance_secs != None):
+                # Advance timestamps in the next (second) input stream
+                cmd.extend(('-itsoffset', f'{self.stream.live_audio_advance_secs}'))
+                # Specify a second (same) input stream
+                cmd.extend(('-i', url))
+                # Take the video from the first input stream
+                cmd.extend(('-map', '0:0'))
+                # Take the audio from the second input stream
+                cmd.extend(('-map', '1:1'))
+            else:
+                cmd.extend(('-map', '0'))
+            cmd.extend(('-c:a', 'copy')) # Copy the audio
+        else:
+            cmd.extend(('-map', '0:0'))
+
+        cmd.extend(('-c:v', 'copy')) # Copy the video
         cmd.extend(('-f', 'hls'))
         cmd.extend(('-hls_time', '1'))
         cmd.extend(('-hls_list_size', '10'))
@@ -131,7 +141,7 @@ class RecordStreamCapture(StreamCapture):
         cmd.extend(('-rtsp_transport', 'tcp')) # Prevent use of UDP to avoid packet loss
         cmd.extend(('-i', 'rtsp://%s:%s@%s:%d%s' % (self.username, self.password, self.ip, self.port, self.stream.path)))
         cmd.extend(('-c', 'copy')) # Take an exact copy of the input stream
-        cmd.extend(super().get_map_arg())
+        cmd.extend(('-map', '0:0' if not self.stream.include_audio else '0'))
         cmd.extend(('-f', 'segment'))
         cmd.extend(('-segment_time', '%d' % self.seg_time))
         cmd.extend(('-segment_wrap', '%d' % self.seg_wrap))
