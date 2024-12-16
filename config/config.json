@@ -15,12 +15,31 @@
     "segment_length"          : 3600,
     "segment_wrap"            : 999999,
     "health_poll_secs"        : 30,
-    "time_must_be_dead_secs"  : 20,
+    "time_must_be_dead_secs"  : 40,
     "min_free_disk_percent"   : 5,
     "onvif_wsdl_defs"         : "/usr/lib/python3.11/site-packages/onvif_zeep-0.2.12-py3.11.egg/lib/python3.11/site-packages/wsdl",
     "checkmoov_interval_secs" : 60,
 
     "cameras" : [
+        {
+            "name"     : "front_of_house_road",
+            "username" : "admin",
+            "password" : "",
+            "ip"       : "192.168.0.128",
+            "port"     : 554,
+            "streams"  : [
+                {
+                    "name"                    : "high_res",
+                    "width"                   : 1920,
+                    "height"                  : 1080,
+                    "path"                    : "/Streaming/Channels/1",
+                    "vtag"                    : "hvc1",
+                    "include_audio"           : true,
+                    "live_audio_advance_secs" : 3.0
+                },
+                { "name" : "low_res",  "width" : 640,  "height" : 360,  "path" : "/Streaming/Channels/2", "vtag" : "hvc1" }
+            ]
+        },
         {
             "name"     : "front_of_house",
             "username" : "admin",
@@ -49,17 +68,6 @@
                     "live_audio_advance_secs" : 3.0
                 },
                 { "name" : "low_res",  "width" : 640,  "height" : 360,  "path" : "/Streaming/Channels/2", "vtag" : "hvc1" }
-            ]
-        },
-        {
-            "name"     : "front_down_road",
-            "username" : "admin",
-            "password" : "",
-            "ip"       : "192.168.0.124",
-            "port"     : 554,
-            "streams"  : [
-                { "name" : "high_res", "width" : 2880, "height" : 1620, "path" : "/avstream/channel=1/stream=0.sdp", "vtag" : "hvc1" },
-                { "name" : "low_res",  "width" : 640,  "height" : 360,  "path" : "/avstream/channel=1/stream=1.sdp", "vtag" : "hvc1", "aspect" : "640:360" }
             ]
         },
         {
@@ -212,11 +220,11 @@
             "name"     : "orangery_roof",
             "username" : "admin",
             "password" : "",
-            "ip"       : "192.168.0.117",
+            "ip"       : "192.168.0.124",
             "port"     : 554,
             "streams"  : [
-                { "name" : "high_res", "width" : 1920, "height" : 1080, "path" : "/profile0", "vtag" : "hvc1" },
-                { "name" : "low_res",  "width" : 640,  "height" : 360,  "path" : "/profile1", "vtag" : "hvc1" }
+                { "name" : "high_res", "width" : 2880, "height" : 1620, "path" : "/avstream/channel=1/stream=0.sdp", "vtag" : "hvc1" },
+                { "name" : "low_res",  "width" : 640,  "height" : 360,  "path" : "/avstream/channel=1/stream=1.sdp", "vtag" : "hvc1", "aspect" : "640:360" }
             ]
         }
     ]
