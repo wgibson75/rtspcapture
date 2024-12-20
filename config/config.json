@@ -71,16 +71,22 @@
             ]
         },
         {
-            "name"              : "footpath",
-            "username"          : "admin",
-            "password"          : "",
-            "ip"                : "192.168.0.119",
-            "port"              : 554,
-            "onvif_port"        : 8080,
-            "reboot_on_failure" : true,
+            "name"     : "footpath",
+            "username" : "admin",
+            "password" : "",
+            "ip"       : "192.168.0.127",
+            "port"     : 554,
             "streams"  : [
-                { "name" : "high_res", "width" : 1920, "height" : 1080, "path" : "/11", "vtag" : "hvc1" },
-                { "name" : "low_res",  "width" : 640,  "height" : 360,  "path" : "/22", "vtag" : "hvc1", "aspect" : "640:360" }
+                {
+                    "name"                    : "high_res",
+                    "width"                   : 1920,
+                    "height"                  : 1080,
+                    "path"                    : "/Streaming/Channels/1",
+                    "vtag"                    : "hvc1",
+                    "include_audio"           : true,
+                    "live_audio_advance_secs" : 3.0
+                },
+                { "name" : "low_res",  "width" : 640,  "height" : 360,  "path" : "/Streaming/Channels/2", "vtag" : "hvc1" }
             ]
         },
         {
