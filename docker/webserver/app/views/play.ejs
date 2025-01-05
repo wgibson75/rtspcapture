@@ -1,0 +1,24 @@
+<html>
+  <head>
+    <title>CCTV Playback</title>
+  </head>
+  <body>
+    <div>
+      <script>
+      const CAPTURE_DIR = '<%= capture_dir %>';
+      const CAMERA      = '<%= camera %>';
+      const START_TIME  = '<%= start_time %>';
+
+      var playUrl = '/' + CAPTURE_DIR + '/' + CAMERA + '/high_res/live.m3u8';
+
+      document.writeln(CAPTURE_DIR);
+      document.writeln('<br>');
+      document.writeln(CAMERA);
+      document.writeln('<br>');
+      document.writeln(playUrl);
+      document.writeln('<br>');
+      document.writeln(START_TIME);
+      </script>
+    </div>
+  </body>
+</html>

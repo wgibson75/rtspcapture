@@ -4,3 +4,5 @@ package-lock.json
 ssl-server.crt
 ssl-server.key
 cookie-secret.txt
+.DS_Store
+._*
