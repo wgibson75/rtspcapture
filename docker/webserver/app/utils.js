@@ -31,7 +31,7 @@ module.exports = {
             let fstat = fs.statSync(dirPath + '/' + filename);
             let fitem = [filename, fstat];
 
-            if (fstat.isDirectory() ||                               // Ignore directories
+            if (fstat.isDirectory() ||                                // Ignore directories
                 ((regEx !== undefined) && (!regEx.test(filename)))) { // Ignore files that don't match extension
                 return;
             }
@@ -69,8 +69,6 @@ module.exports = {
             let oldest_file = files.sort().shift();
             let fstat = fs.statSync(path.join(camera_path, oldest_file));
 
-            // Creation time is good enough but note that if checkmoov has fixed
-            // the recording then this will be later than the real creation time
             if ((time == 0) || (fstat.ctimeMs < time))
             {
                 time = fstat.ctimeMs;

@@ -28,10 +28,11 @@ import re
 # NOTE: Last step required to use untrunc outside of $HOME.
 #
 
-UNTRUNC_BINARY = 'untrunc'
-FFMPEG_BINARY = 'ffmpeg'
+UNTRUNC_BINARY       = 'untrunc'
+FFMPEG_BINARY        = 'ffmpeg'
+DATA_COPY_CHUNK_SIZE = 1024 * 1024 # Copy fixed data in 1Mb chunks
 
-LOG_MAX_BYTES = 262144
+LOG_MAX_BYTES    = 262144
 LOG_BACKUP_COUNT = 2
 
 logger = logging.getLogger('checkmoov_log')
@@ -162,24 +163,40 @@ class CheckCamera:
             logging.error('Size of %s is zero. Aborting fix.' % fixed_file)
             return False
 
-        # Step 2: Move the MOOV atom to the beginning of the file
+        # Step 2: Move the MOOV atom to the beginning of the file to create a fast start file
         faststart_file = self.__FASTSTART_FILENAME % bad_file
         if os.path.isfile(faststart_file): # Command will fail if output file already exists
             os.remove(faststart_file)
         subprocess.call(self.__CMD_FASTSTART % (fixed_file, faststart_file), shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 
+        os.remove(fixed_file) # Clean up the initial fixed file
+
         if not os.path.isfile(faststart_file):
             logging.error('Failed to create %s with faststart.' % faststart_file)
-            os.remove(fixed_file) # Clean up fixed file
             return False
 
-        # Step 3: Apply the last modified time from the original file
-        last_access_time = os.path.getatime(bad_file)
+        # Step 3: Maintain the creation time and the last modified time of the original file but with fixed data
+        last_access_time   = os.path.getatime(bad_file)
         last_modified_time = os.path.getmtime(bad_file)
-        os.utime(faststart_file, (last_access_time, last_modified_time))
 
-        os.remove(fixed_file)
-        shutil.move(faststart_file, bad_file)
+        # It is important to maintain the original file creation time and last modified time
+        # so that we can determine the duration of any video file efficiently by subtracting
+        # the creation time from the last modified time. So truncate the original bad file
+        # to zero bytes and replace its contents with data from the fast start file.
+        with open(faststart_file, 'rb') as src:
+            with open(bad_file, 'ab') as dest:
+                dest.truncate(0)
+                while True:
+                    data = src.read(DATA_COPY_CHUNK_SIZE)
+                    if not data:
+                        break
+                    dest.write(data)
+
+        os.remove(faststart_file) # Clean up the fast start file
+
+        # Then re-apply the original last modified time (and last access time)
+        os.utime(bad_file, (last_access_time, last_modified_time))
+
         logging.info('Fixed: %s, ignored=%s' % (bad_file, self.ignored_file))
         return True
 
