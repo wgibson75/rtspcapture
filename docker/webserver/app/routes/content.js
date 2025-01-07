@@ -10,6 +10,8 @@ const utils  = require('../utils');
 const config = require('../config');
 const logger = require('../logger');
 
+const HOME_PAGE_HTML_FILE = 'index.html';
+
 const ensureLoggedIn = ensureLogIn();
 
 ///////////////////////////////////
@@ -72,22 +74,11 @@ router.get('/snapshots', ensureLoggedIn, function(request, response, next) {
     response.render('browse_snapshots', { snapshots_dir: config.get('snapshots_dir') });
 });
 
-router.get('/play', ensureLoggedIn, function(request, response, next) {
-    let cameraName = request.query.c;
-    if (!utils.isCameraNameValid(cameraName)) return response.sendStatus(404);
-
-    response.render('play', {
-        capture_dir : config.get('capture_dir'),
-        camera_name : cameraName,
-        start_time  : utils.getStartTimeOfCamRecsEpochMs(cameraName)
-    });
-});
-
 router.get(/^.*$/, ensureLoggedIn, function(request, response, next) {
     logger.info('requestHandler_content');
 
     if (request.url == '/') {
-        let num_days = utils.getTotalRecordTimeDays()
+        num_days = utils.getTotalRecordTimeDays()
         logger.info('Total record time: %f', num_days);
         return response.render('index', { total_record_time: num_days });
     }
