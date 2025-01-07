@@ -56,7 +56,7 @@ module.exports = {
             if (!fs.existsSync(camera_path)) return; // Camera directory doesn't exit
 
             let files = [];
-            let regex = new RegExp('.*_\d+\..*'); // Match only numbered recording files
+            let regex = /.*_\d+\..*/; // Match only numbered recording files
             fs.readdirSync(camera_path).forEach((filename) => {
                 if (!filename.match(regex)) {
                     return;

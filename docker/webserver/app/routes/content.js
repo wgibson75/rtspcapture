@@ -10,8 +10,6 @@ const utils  = require('../utils');
 const config = require('../config');
 const logger = require('../logger');
 
-const HOME_PAGE_HTML_FILE = 'index.html';
-
 const ensureLoggedIn = ensureLogIn();
 
 ///////////////////////////////////
