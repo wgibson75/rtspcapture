@@ -274,9 +274,9 @@ def checkmoov(config):
 
 def main():
     if not shutil.which(UNTRUNC_BINARY):
-        sys.exit('Cannot find %s' % UNTRUNC_BINARY)
+        sys.exit(f'Cannot find {UNTRUNC_BINARY}')
     if not shutil.which(FFMPEG_BINARY):
-        sys.exit('Cannot find %s' % FFMPEG_BINARY)
+        sys.exit(f'Cannot find {FFMPEG_BINARY}')
 
     parser = argparse.ArgumentParser()
     parser.add_argument('config_file', help='CCTV JSON configuration file.')

@@ -25,7 +25,7 @@ update_dead_time_secs = None
 class CommandProc:
     def __init__(self, cmd):
         self.cmd = cmd
-        logger.info('Invoking command: %s' % ' '.join(cmd))
+        logger.info(f'Invoking command: {" ".join(cmd)}')
         self.process = subprocess.Popen(self.cmd)
 
     def is_alive(self):
@@ -66,18 +66,18 @@ class LiveStreamCapture(StreamCapture):
         super().__init__(cam, stream)
 
         # Create output directory for live streaming
-        out_dir = '%s/%s' % (self.name, stream.name)
+        out_dir = f'{self.name}/{stream.name}'
         if os.path.isdir(out_dir):
-            logger.info('Removing directory: %s' % out_dir)
+            logger.info(f'Removing directory: {out_dir}')
             shutil.rmtree(out_dir)
         if not os.path.isdir(out_dir):
             os.mkdir(out_dir, 0o777)
 
-        self.out_playlist = '%s/live.m3u8' % out_dir
+        self.out_playlist = f'{out_dir}/live.m3u8'
         self._start()
 
     def _start(self):
-        url = 'rtsp://%s:%s@%s:%d%s' % (self.username, self.password, self.ip, self.port, self.stream.path)
+        url = f'rtsp://{self.username}:{self.password}@{self.ip}:{self.port}{self.stream.path}'
         cmd = []
         cmd.append(('ffmpeg'))
         cmd.extend(('-fflags', 'nobuffer'))
@@ -130,22 +130,23 @@ class RecordStreamCapture(StreamCapture):
         self.seg_time, self.seg_wrap = seg_time, seg_wrap
 
         # Setup output format and search pattern for recording segments
-        self.out_record_format = self.name + '/' + self.name + '_%0' + str(int(math.log10(self.seg_wrap)) + 1) + 'd.mp4'
+        self.out_record_format = f'{self.name}/{self.name}_%0{str(int(math.log10(self.seg_wrap)) + 1)}d.mp4'
         self.out_record_search = re.sub('%0\d+d', '*', self.out_record_format)
 
         self._start()
 
     def _start(self):
+        url = f'rtsp://{self.username}:{self.password}@{self.ip}:{self.port}{self.stream.path}'
         cmd = []
         cmd.append(('ffmpeg'))
         cmd.extend(('-rtsp_transport', 'tcp')) # Prevent use of UDP to avoid packet loss
-        cmd.extend(('-i', 'rtsp://%s:%s@%s:%d%s' % (self.username, self.password, self.ip, self.port, self.stream.path)))
+        cmd.extend(('-i', url))
         cmd.extend(('-c', 'copy')) # Take an exact copy of the input stream
         cmd.extend(('-map', '0:0' if not self.stream.include_audio else '0'))
         cmd.extend(('-f', 'segment'))
-        cmd.extend(('-segment_time', '%d' % self.seg_time))
-        cmd.extend(('-segment_wrap', '%d' % self.seg_wrap))
-        cmd.extend(('-segment_start_number', '%d' % self.get_segment_start_num()))
+        cmd.extend(('-segment_time', f'{self.seg_time}'))
+        cmd.extend(('-segment_wrap', f'{self.seg_wrap}'))
+        cmd.extend(('-segment_start_number', f'{self.get_segment_start_num()}'))
         cmd.extend(('-reset_timestamps', '1'))
         if self.stream.vtag != None:
             cmd.extend(('-tag:v', self.stream.vtag))
@@ -173,7 +174,7 @@ class RecordStreamCapture(StreamCapture):
         if match:
             return int(match.group(1)) + 1 # Segment number
         else:
-            raise Exception('Unable to determine segment start number (%s)' % files[0])
+            raise Exception(f'Unable to determine segment start number ({files[0]})')
 
 class CameraCapture:
     def __init__(self, cam, seg_time, seg_wrap):
@@ -196,11 +197,11 @@ class CameraCapture:
 
     def health_check_standard(self):
         if not self.record_stream.is_alive():
-            logger.info('#### Recording from %s is dead. Restarting...' % self.record_stream.name)
+            logger.info(f'#### Recording from {self.record_stream.name} is dead. Restarting...')
             self.record_stream.restart()
         for capture in self.live_streams:
             if not capture.is_alive():
-                logger.info('#### Live streaming from %s [stream:%s] is dead. Restarting...' % (capture.name, capture.stream.name))
+                logger.info(f'#### Live streaming from {capture.name} [stream:{capture.stream.name}] is dead. Restarting...')
                 capture.restart()
 
     def health_check_reboot_on_failure(self):
@@ -209,20 +210,20 @@ class CameraCapture:
         else:
             attempt_reboot = False
             if not self.record_stream.is_alive():
-                logger.info('#### Recording from %s is dead.' % self.record_stream.name)
+                logger.info(f'#### Recording from {self.record_stream.name} is dead.')
                 attempt_reboot = True
             for capture in self.live_streams:
                 if not capture.is_alive():
-                    logger.info('#### Live streaming from %s [stream:%s] is dead.' % (capture.name, capture.stream.name))
+                    logger.info(f'#### Live streaming from {capture.name} [stream:{capture.stream.name}] is dead.')
                     attempt_reboot = True
             if attempt_reboot:
                 self.reboot()
 
     def restart_all_streams_after_reboot(self):
-        logger.info('#### Restarting recording from %s...' % self.record_stream.name)
+        logger.info(f'#### Restarting recording from {self.record_stream.name}...')
         self.record_stream.restart()
         for capture in self.live_streams:
-            logger.info('#### Restarting live streaming from %s [stream:%s]...' % (capture.name, capture.stream.name))
+            logger.info(f'#### Restarting live streaming from {capture.name} [stream:{capture.stream.name}]...')
             capture.restart()
         self.rebooting = False
 
@@ -232,10 +233,10 @@ class CameraCapture:
 
         try:
             cam = ONVIFCamera(self.ip, self.onvif_port, self.username, self.password, onvif_wsdl_defs)
-            logger.info('######## Rebooting %s : %s' % (self.ip, cam.devicemgmt.SystemReboot()))
+            logger.info(f'######## Rebooting {self.ip} : {cam.devicemgmt.SystemReboot()}')
             self.rebooting = True
         except Exception:
-            logger.exception('Failed to reboot %s' % self.ip)
+            logger.exception(f'Failed to reboot {self.ip}')
 
 class CheckDiskUsage:
     def __init__(self, config):
@@ -245,7 +246,7 @@ class CheckDiskUsage:
         while self.__is_usage_exceeded():
             oldest_file = self.__get_oldest_cam_file()
             if oldest_file:
-                logger.info('#### Deleting oldest recording: %s' % os.path.basename(oldest_file))
+                logger.info(f'#### Deleting oldest recording: {os.path.basename(oldest_file)}')
                 os.remove(oldest_file)
             else: # Sanity check
                 break
@@ -295,7 +296,7 @@ class CheckDiskUsage:
 
     def __delete_oldest_rec(self, cam_name):
         files = sorted(glob.glob(os.path.join(self.capture_path, cam_name, '*.mp4')), key=os.path.getmtime)
-        logger.info('#### Deleting oldest recording: %s' % os.path.basename(files[0]))
+        logger.info(f'#### Deleting oldest recording: {os.path.basename(files[0])}')
         os.remove(files[0])
 
 def load_config(config_file):
