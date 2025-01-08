@@ -88,15 +88,15 @@ class CheckCamera:
         for f in files:
             if os.path.getsize(f) == 0:
                 continue # Ignore empty files
-            logging.info('Checking: %s, size=%d [total: %s files]' % (f, os.path.getsize(f), self.total_num_files))
+            logging.info(f'Checking: {f}, size={os.path.getsize(f)} [total: {self.total_num_files} files]')
             if self.__is_file_missing_moov(f):
                 if not self.good_file:
                     self.good_file = self.__read_check_marker()
                 if not self.good_file: # Need at least one good file to fix anything
-                    logging.warning('Unable to fix %s. No good file to use.' % f)
+                    logging.warning(f'Unable to fix {f}. No good file to use.')
                     continue
                 if not self.__fix_moov(f):
-                    logging.error('Failed to fix: %s' % f)
+                    logging.error(f'Failed to fix: {f}')
                     continue
             self.__write_check_marker(f) # Update the check marker for any good file
 
@@ -120,7 +120,7 @@ class CheckCamera:
         wrap_num = int(len(last_digits) * '9')
         if (last_num < last_but_one_num and last_but_one_num != wrap_num) or \
            (last_num == wrap_num and last_but_one_num == 1):
-           logging.info('Swapping order of %s with %s' % (files[-1], files[-2]))
+           logging.info(f'Swapping order of {files[-1]} with {files[-2]}')
            files[-1], files[-2] = files[-2], files[-1]
 
     def __get_filename_digits(self, filename): # Get a string comprising the digits in the filename
@@ -140,9 +140,9 @@ class CheckCamera:
             i = files.index(marker)
             return files[i+1:]
         except ValueError:
-            logging.error('Failed to apply check marker %s [i=%d, num_files=%d]. Checking all files.' % (marker, i, len(files)))
+            logging.error(f'Failed to apply check marker {marker} [i={i}, num_files={len(files)}]. Checking all files.')
             if self.ignored_file:
-                logging.error('Ignored file: %s' % self.ignored_file)
+                logging.error(f'Ignored file: {self.ignored_file}')
             logging.error(','.join(files))
             return files
 
@@ -157,11 +157,19 @@ class CheckCamera:
         fixed_file = self.__MOOV_FIX_FILENAME % bad_file
 
         if not os.path.isfile(fixed_file):
-            logging.error('Failed to create %s with MOOV atom.' % fixed_file)
+            logging.error(f'Failed to create {fixed_file} with MOOV atom.')
             return False
-        if os.path.getsize(fixed_file) == 0: # Sanity check
-            logging.error('Size of %s is zero. Aborting fix.' % fixed_file)
+
+        bad_file_size   = os.path.getsize(bad_file)
+        fixed_file_size = os.path.getsize(fixed_file)
+
+        if fixed_file_size == 0: # Sanity check
+            logging.error(f'Size of {fixed_file} is zero. Aborting fix.')
             return False
+
+        if fixed_file_size < bad_file_size:
+            logging.warning(f'Fixed file is smaller than original: {fixed_file}, {bad_file}')
+            logging.warning(f'Fixed vs original file sizes: {fixed_file_size} bytes, {bad_file_size} bytes ({bad_file_size - fixed_file_size} bytes lost)')
 
         # Step 2: Move the MOOV atom to the beginning of the file to create a fast start file
         faststart_file = self.__FASTSTART_FILENAME % bad_file
@@ -172,10 +180,10 @@ class CheckCamera:
         os.remove(fixed_file) # Clean up the initial fixed file
 
         if not os.path.isfile(faststart_file):
-            logging.error('Failed to create %s with faststart.' % faststart_file)
+            logging.error(f'Failed to create {faststart_file} with faststart.')
             return False
 
-        # Step 3: Maintain the creation time and the last modified time of the original file but with fixed data
+        # Step 3: Maintain the creation time and the last modified time of the original file with fixed data
         last_access_time   = os.path.getatime(bad_file)
         last_modified_time = os.path.getmtime(bad_file)
 
@@ -197,7 +205,8 @@ class CheckCamera:
         # Then re-apply the original last modified time (and last access time)
         os.utime(bad_file, (last_access_time, last_modified_time))
 
-        logging.info('Fixed: %s, ignored=%s' % (bad_file, self.ignored_file))
+        fixed_file_size = os.path.getsize(bad_file)
+        logging.info(f'Fixed: {bad_file} (size: {fixed_file_size}), ignored={self.ignored_file}')
         return True
 
     def __write_check_marker(self, file):
@@ -242,10 +251,10 @@ def configure_logging(config):
             )
           ],
           level=logging.DEBUG,
-          format='%(asctime)s %(message)s'
+          format='%(asctime)s %(levelname)s %(message)s'
         )
     except PermissionError:
-        print('Cannot open log file (%s). Logging is disabled.' % log_file)
+        print(f'Cannot open log file ({log_file}). Logging is disabled.')
 
 def checkmoov(config):
     logging.info('Starting...')
