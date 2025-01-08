@@ -152,7 +152,15 @@ class CheckCamera:
         return True if result else False
 
     def __fix_moov(self, bad_file):
-        # Step 1: Add the missing MOOV atom
+        # Step 1: Cleanup any temporary files left over from a previously interrupted fix attempt
+        for pattern in [self.__MOOV_FIX_FILENAME, self.__FASTSTART_FILENAME]:
+            regex = rf'{re.escape(pattern) % ".*"}'
+            files_to_cleanup = [f for f in os.listdir('.') if re.match(regex, f)]
+            for f in files_to_cleanup:
+                logging.warning(f'Cleaning up {f}')
+                os.remove(f)
+
+        # Step 2: Add the missing MOOV atom for the supplied file
         subprocess.call(self.__CMD_FIX_MOOV % (self.good_file, bad_file), shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
         fixed_file = self.__MOOV_FIX_FILENAME % bad_file
 
@@ -171,7 +179,7 @@ class CheckCamera:
             logging.warning(f'Fixed file is smaller than original: {fixed_file}, {bad_file}')
             logging.warning(f'Fixed vs original file sizes: {fixed_file_size} bytes, {bad_file_size} bytes ({bad_file_size - fixed_file_size} bytes lost)')
 
-        # Step 2: Move the MOOV atom to the beginning of the file to create a fast start file
+        # Step 3: Move the MOOV atom to the beginning of the file to create a fast start file
         faststart_file = self.__FASTSTART_FILENAME % bad_file
         if os.path.isfile(faststart_file): # Command will fail if output file already exists
             os.remove(faststart_file)
@@ -183,7 +191,7 @@ class CheckCamera:
             logging.error(f'Failed to create {faststart_file} with faststart.')
             return False
 
-        # Step 3: Maintain the creation time and the last modified time of the original file with fixed data
+        # Step 4: Maintain the creation time and the last modified time of the original file with fixed data
         last_access_time   = os.path.getatime(bad_file)
         last_modified_time = os.path.getmtime(bad_file)
 
