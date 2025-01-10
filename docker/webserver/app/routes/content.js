@@ -119,7 +119,7 @@ function handleContent_dirListing(request, response, filePath) {
     files.forEach((entry, i) => {
         let filename = entry[0];
         let fstat    = entry[1];
-        let [date, day, time] = getDateString(fstat.mtime).split(' ');
+        let [date, day, time] = getDateString(fstat.birthtime).split(' ');
         let fields = [date, day, time, getSizeString(fstat.size)];
 
         let html = '';
