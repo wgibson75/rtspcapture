@@ -166,6 +166,10 @@ class CheckCamera:
 
         if not os.path.isfile(fixed_file):
             logging.error(f'Failed to create {fixed_file} with MOOV atom.')
+            # A bit draconian and this is very rare, but it is possible that the good file contains
+            # a MOOV atom but it is too small to be of any use so remove it and rebuild check marker
+            os.remove(self.good_file)
+            os.remove(self.__MARKER_FILENAME)
             return False
 
         bad_file_size   = os.path.getsize(bad_file)
