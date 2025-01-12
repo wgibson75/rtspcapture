@@ -49,7 +49,7 @@
   <script>
 
   const SNAPSHOTS_DIR = '<%= snapshots_dir %>';
-  const JSON_SUMMARY_FILE = SNAPSHOTS_DIR + '/snapshots.json';
+  const JSON_SUMMARY_FILE = `${SNAPSHOTS_DIR}/snapshots.json`;
   const CONTROL_OFFSET_P = '270px';
   const CONTROL_OFFSET_H = '80px';
   const CONTROL_TEXT_SIZE_P = '30pt';
@@ -94,7 +94,7 @@
     });
   });
 
-  $(window).bind("orientationchange", function(){
+  $(window).bind("orientationchange", function() {
     Orientation = window.orientation;
     positionControls();
   });
