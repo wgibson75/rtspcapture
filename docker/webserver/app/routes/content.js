@@ -72,6 +72,29 @@ router.get('/snapshots', ensureLoggedIn, function(request, response, next) {
     response.render('browse_snapshots', { snapshots_dir: config.get('snapshots_dir') });
 });
 
+router.get('/play', ensureLoggedIn, function(request, response, next) {
+    let camera = request.query.c;
+    if (!utils.isCameraNameValid(camera)) return response.sendStatus(404);
+
+    let cameraDir  = utils.getCameraCaptureDir(camera);
+
+    // Build list of all recordings with creation date pulled apart into separate fields
+    let recordings = [];
+    utils.getFilesSortedByDate(cameraDir, 'mp4').forEach((entry) => {
+        let date = new Date(entry[1].birthtimeMs);
+        recordings.push([
+            `'${entry[0]}'`, // Recording filename (quoted string for EJS)
+            date.getYear(), date.getMonth(), date.getDay(), date.getHours(), date.getMinutes(), date.getSeconds()
+        ]);
+    });
+
+    response.render('play', {
+        capture_dir : config.get('capture_dir'),
+        camera_name : camera,
+        recordings  : recordings
+    });
+});
+
 router.get(/^.*$/, ensureLoggedIn, function(request, response, next) {
     logger.info('requestHandler_content');
 

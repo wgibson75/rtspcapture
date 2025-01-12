@@ -1,0 +1,97 @@
+<html>
+  <head>
+    <title>CCTV Playback</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+  </head>
+  <link rel="stylesheet" href="jquery.mobile-1.4.5.min.css" />
+  <style>
+    body {
+      background-color: black;
+    }
+
+    .holder {
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+  </style>
+  <body onload="init()" id="body">
+    <script src="jquery-3.7.1.min.js"></script>
+    <script src="jquery.mobile-1.4.5.min.js"></script>
+    <script>
+    const CAPTURE_DIR = '<%= capture_dir %>';
+    const CAMERA      = '<%= camera_name %>';
+    const LIVE_URL    = `/${CAPTURE_DIR}/${CAMERA}/high_res/live.m3u8`;
+
+    // Slurp up the array of recordings information
+    const RECS = [];
+    RECS.push(<%- recordings %>);
+    const FIELD_WIDTH = 7; // Number of fields for each recording
+
+    var video;
+
+    function init() {
+      setupVideoPositioning();
+
+      video = document.getElementById('video');
+      video.src = LIVE_URL;
+    }
+
+    function setupVideoPositioning() {
+      // Running on an iPhone
+      if (isIPhone()) {
+        $(window).on('orientationchange', handleOrientationChange);
+
+        $('#video').css('position', 'fixed');
+        $('#video').css('top', '0px');
+        $('#video').css('left', '0px');
+
+        // Setup initial orientation
+        handleOrientationChange();
+      }
+      // Otherwise assume running on a Mac
+      else {
+        $('#video').css('max-width', '100%');
+        $('#video').css('max-height', 'auto');
+        $('#video').css('position', 'fixed');
+        $('#video').css('left', '0px');
+      }
+    }
+
+    function handleOrientationChange() {
+      // Portrait
+      if (window.orientation == 0) {
+        $('#video').css('max-width', '100%');
+        $('#video').css('max-height', 'auto');
+      }
+      // Landscape
+      else {
+        $('#video').css('max-width', 'auto');
+        $('#video').css('max-height', '100%');
+      }
+    }
+
+    function isIPhone() {
+      return window.navigator.userAgent.includes('iPhone');
+    }
+
+    function getRecordingsGroupedByDay() {
+      let recs = [], currentDay = undefined;
+
+      for (let i = 0; i < RECS.length; i += FIELD_WIDTH) {
+        let [file, year, month, day, hrs, mins, secs] = RECS.slice(i, i + FIELD_WIDTH);
+
+        if (currentDay != day) {
+          recs.push([]);
+          currentDay = day;
+        }
+        recs.at(-1).push([file, year, month, day, hrs, mins, secs]);
+      }
+      return recs;
+    }
+    </script>
+    <div class="holder">
+      <video id="video" type="video/mp4" playsinline autoplay muted controls></video>
+    </div>
+  </body>
+</html>

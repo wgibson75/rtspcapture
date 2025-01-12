@@ -14,12 +14,12 @@ module.exports = {
     sortFilesByDate: function(fitems) {
         let sortedFiles = fitems.sort((a, b) => {
             let aStat = a[1], bStat = b[1];
-            return new Date(bStat.mtime).getTime() - new Date(aStat.mtime).getTime();
+            return new Date(bStat.birthtime).getTime() - new Date(aStat.birthtime).getTime();
         });
         return sortedFiles;
     },
 
-    getFilenamesSortedByDate: function(dirPath, ext) {
+    getFilesSortedByDate: function(dirPath, ext) {
         let files = [];
         let regEx = undefined;
 
@@ -35,10 +35,13 @@ module.exports = {
                 ((regEx !== undefined) && (!regEx.test(filename)))) { // Ignore files that don't match extension
                 return;
             }
-
             files.push(fitem);
         });
-        return this.sortFilesByDate(files).map((entry) => entry[0]);
+        return this.sortFilesByDate(files);
+    },
+
+    getFilenamesSortedByDate: function(dirPath, ext) {
+        return this.getFilesSortedByDate(dirPath, ext).map((entry) => entry[0]);
     },
 
     getTimestampNow: function() {
@@ -79,5 +82,17 @@ module.exports = {
 
         let now = new Date().getTime();
         return ((now - time) / (1000 * 24 * 60 * 60)).toFixed(2);
+    },
+
+    isCameraNameValid: function(cameraName) {
+        let isValid = false;
+        config.get('cameras').forEach((camera) => {
+            if (camera.name == cameraName) isValid = true;
+        });
+        return isValid;
+    },
+
+    getCameraCaptureDir(cameraName) {
+        return path.join(config.get('root_path'), config.get('capture_dir'), cameraName);
     }
 };

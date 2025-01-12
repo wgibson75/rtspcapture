@@ -139,18 +139,15 @@ function createSnapshotSummary(name, timestamp, snapshots) {
     var file = path.join(config.get('snapshot_path'), util.format('%s_%s.html', name, timestamp));
 
     logger.info('Creating: ' + file);
-
     var entries = [];
     snapshots.forEach((entry) => {
         let [imageFile, videoUrl, position] = entry;
         let imageUrl = path.join(config.get('snapshot_images_dir'), imageFile);
         entries.push({ image: imageUrl, video: videoUrl, pos: position });
     });
-
     var template = fs.readFileSync('views/snapshot.ejs', 'utf-8');
     var html     = ejs.render (template , { entries: entries });
     fs.writeFileSync(file, html, 'utf8');
-
     createSnapshotsFile();
 }
 
@@ -158,7 +155,6 @@ function createSnapshotSummary(name, timestamp, snapshots) {
 function createSnapshotsFile() {
     let snapshotPath = config.get('snapshot_path');
     let maxSnapshots = config.get('max_num_snapshots');
-
     let files = utils.getFilenamesSortedByDate(snapshotPath, 'html');
 
     while (files.length > maxSnapshots) {
