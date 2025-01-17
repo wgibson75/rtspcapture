@@ -84,7 +84,7 @@ router.get('/play', ensureLoggedIn, function(request, response, next) {
         let date = new Date(entry[1].birthtimeMs);
         recordings.push([
             `'${entry[0]}'`, // Recording filename (quoted string for EJS)
-            date.getYear(), date.getMonth(), date.getDay(), date.getHours(), date.getMinutes(), date.getSeconds()
+            date.getFullYear(), date.getMonth(), date.getDate(), date.getDay(), date.getHours(), date.getMinutes(), date.getSeconds()
         ]);
     });
 

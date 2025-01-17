@@ -16,7 +16,7 @@
       var cameras = '<%= cameras %>'.split(',');
 
       cameras.forEach(function(name) {
-        let linkUrl  = '/' + CAPTURE_DIR + '/' + name + '/high_res/live.m3u8';
+        let linkUrl = `/play?c=${name}`;
         let videoUrl = '/' + CAPTURE_DIR + '/' + name + '/low_res/live.m3u8';
 
         document.writeln('<a href="' + linkUrl + '">');

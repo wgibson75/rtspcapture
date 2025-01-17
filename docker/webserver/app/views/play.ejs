@@ -11,14 +11,58 @@
         margin: 0;
       }
 
-      .holder {
+      table {
+        border-spacing: 0px;
+      }
+
+      td {
+        padding: 0px;
+        font-size: 14pt;
+      }
+
+      td.rule {
+        width: 30px;
+      }
+
+      hr {
+        border: 0;
+        height: 2px;
+        background-image: linear-gradient(to right, rgba(255, 255, 0, 0), rgba(255, 255, 0, 0.75), rgba(255, 255, 0, 0));
+      }
+
+      .container {
+        position: relative;
+        overflow: hidden;
         width: 100%;
         height: 100%;
-        position: relative;
+      }
+
+      #control {
+        position: absolute;
+        overflow: scroll;
+        scrollbar-width: none;
+        background-color: rgba(128, 128, 128, 0.5);
+        color: yellow;
       }
 
       #video {
-        font-size: 0;
+        font-size: 0pt;
+      }
+
+      tr.playEntry {
+        color: yellow;
+        text-align: center;
+      }
+
+      tr.dayBound {
+        color: yellow;
+        background-color: rgba(51, 51, 255, 0.5);
+        text-align: center;
+      }
+
+      tr.selected {
+        background-color: rgba(32, 32, 32, 0.5);
+        text-align: center; 
       }
     </style>
   </head>
@@ -27,21 +71,72 @@
   const CAMERA      = "<%= camera_name %>";
   const LIVE_URL    = `/${CAPTURE_DIR}/${CAMERA}/high_res/live.m3u8`;
 
-  // Slurp up the array of recordings information
-  const RECS = [];
-  RECS.push(<%- recordings %>);
-  const FIELD_WIDTH = 7; // Number of fields for each recording
+  const RECS_DATA = [];
+  RECS_DATA.push(<%- recordings %>);
+  const FIELD_WIDTH = 8; // Number of fields for each recording
 
-  var video;
+  const RECORDINGS = loadRecordingsGroupedByDay();
+
+  const DAYS = ["Mon", "Tue", "Wed", "Thur", "Fri", "Sat", "Sun"];
+
+  const MARGIN_CONTROL_TOP_PCT = 5;
+  const MARGIN_CONTROL_RHT_PCT = 5;
+  const HEIGHT_CONTROL_PCT = 85;
+
+  const MAKE_CONTROL_DRAGGABLE = false;
+  const PLAYBACK_SPEEDS = [0, 0.5, 1, 2, 4, 8, 16];
+  const PLAYBACK_SPEED_NORMAL_IDX = 2;
+
+  var currentPlayId = null;
+  var isPaused = null;
+  var currentSpeedIdx = null;
   var orientation;
+  var video;
 
-  function positionControls() {
+  $(document).ready(function () {
+    video = document.getElementById("video");
+
+    if (MAKE_CONTROL_DRAGGABLE) {
+      $(function() {
+        $('#control').draggable();
+      });
+    }
+
+    resizeVideo();
+
+    // Must load data into the control before positioning
+    initControl();
+    positionControl();
+
+    // Play live streaming by default
+    playPause(0, 0, 0);
+  });
+
+  function loadRecordingsGroupedByDay() {
+    let recs = [], currentDay = undefined;
+
+    for (let i = 0; i < RECS_DATA.length; i += FIELD_WIDTH) {
+      let [file, year, month, date, day, hrs, mins, secs] = RECS_DATA.slice(i, i + FIELD_WIDTH);
+
+      if (currentDay != day) {
+        recs.push([]);
+        currentDay = day;
+      }
+      recs.at(-1).push([file, year, month, date, day, hrs, mins, secs]);
+    }
+    return recs;
+  }
+
+  function positionControl() {
     orientation = window.orientation;
     // Portrait
     if (orientation == 0) {
     }
     // Otherwise landscape
     else {
+      $('#control').css("height", `${HEIGHT_CONTROL_PCT}%`);
+      $('#control').css("top", `${MARGIN_CONTROL_TOP_PCT}%`);
+      $('#control').css("left", window.innerWidth - $('#control').width() - (window.innerWidth * 0.05));
     }
   }
 
@@ -49,59 +144,150 @@
     video.setAttribute("width", window.innerWidth);
   }
 
+  function initControl() {
+    if (RECORDINGS.length == 0) return;
 
-  $(document).ready(function () {
-    video = document.getElementById("video");
-    video.src = LIVE_URL;
+    let control = document.getElementById('control');
+    let table = document.createElement('table');
 
-    positionControls();
-    resizeVideo();
+    let id = 0;
+    for (let dayIdx = 0; dayIdx < RECORDINGS.length; dayIdx++) {
+      for (let recIdx = 0; recIdx < RECORDINGS[dayIdx].length; recIdx++) {
+        let [file, year, month, date, day, hrs, mins, secs] = RECORDINGS[dayIdx][recIdx];
 
-    // Make the controls draggable
-    //$(function() {
-    //  $('#control').draggable();
-    //});
+        // Format certain time fields
+        date  = ("0" + date).slice(-2);
+        month = ("0" + (month + 1)).slice(-2);
+        hrs   = ("0" + hrs).slice(-2);
+        mins  = ("0" + mins).slice(-2);
+        secs  = ("0" + secs).slice(-2);
 
-    //$.getJSON(JSON_SUMMARY_FILE, function(data) {
-    //  if (!(data instanceof Object)) return;
-    //  if (!('snapshots' in data)) return;
+        // Show day for day boundary
+        if ((dayIdx != 0) && (recIdx ==0)) {
+          let text = `${DAYS[day]} ${date}-${month}-${year}`;
+          let row = createRowForDayBoundary(text);
+          table.appendChild(row);
+        }
 
-      //Snapshots = data.snapshots;
-      //insertSnapshotPane();
-      //showSnapshot();
-      //showFilters();
-    //});
-  });
+        let text = ((dayIdx == 0) && (recIdx == 0)) ? "Live" : `${hrs}:${mins}:${secs}`;
+        let row = createRowForPlayEntry(id++, dayIdx, recIdx, text);
+        table.appendChild(row);
+      }
+    }
+    control.appendChild(table);
+  }
+
+  function createRowForDayBoundary(text) {
+    let row = document.createElement("tr");
+    row.setAttribute("class", "dayBound");
+
+    let cell = document.createElement("td");
+    cell.setAttribute("colspan", "3");
+    cell.innerHTML = text;
+    row.appendChild(cell);
+
+    return row;
+  }
+
+  function createRowForPlayEntry(id, dayIdx, recIdx, text) {
+    let row = document.createElement("tr");
+    row.setAttribute("class", "playEntry");
+    row.setAttribute("id", id);
+
+    let cell1 = document.createElement("td");
+    let cell2 = document.createElement("td")
+    let cell3 = document.createElement("td");
+
+    cell1.setAttribute("class", "rule");
+    cell1.setAttribute("onclick", "playSpeedDown()");
+    cell2.setAttribute("onclick", `playPause(${id},${dayIdx},${recIdx})`);
+    cell2.innerHTML = text;
+    cell3.setAttribute("class", "rule");
+    cell3.setAttribute("onclick", "playSpeedUp()");
+
+    cell1.appendChild(document.createElement("hr"));
+    cell3.appendChild(document.createElement("hr"));
+
+    row.appendChild(cell1);
+    row.appendChild(cell2);
+    row.appendChild(cell3);
+
+    return row;
+  }
+
+  function playPause(id, dayIdx, recIdx) {
+    let isPlayToggle = false;
+
+    // Handle selection highlight
+    if ((currentPlayId != null) && (currentPlayId != id)) {
+      $("#" + currentPlayId).removeClass("selected");
+    }
+    $("#" + id).addClass("selected");
+
+    if (currentPlayId == id) {
+      isPlayToggle = true;
+      isPaused = !isPaused;
+    }
+    else {
+      isPaused = false;
+      currentPlayId = id;
+    }
+
+    if (isPlayToggle) {
+      if (isPaused) {
+        video.pause();
+      }
+      else {
+        video.play();
+      }
+      return;
+    }
+    else {
+      video.src = ((dayIdx == 0) && (recIdx == 0))
+        ? LIVE_URL : `/${CAPTURE_DIR}/${CAMERA}/${RECORDINGS[dayIdx][recIdx][0]}`;
+
+      setPlaybackSpeed(PLAYBACK_SPEED_NORMAL_IDX);
+    }
+  }
+
+  function playSpeedUp() {
+    if (currentSpeedIdx >= PLAYBACK_SPEEDS.length) {
+      return;
+    }
+    setPlaybackSpeed(++currentSpeedIdx);
+  }
+
+  function playSpeedDown() {
+    if (currentSpeedIdx == 0) {
+      return;
+    }
+    setPlaybackSpeed(--currentSpeedIdx);
+  }
+
+  function setPlaybackSpeed(speedIdx) {
+    if ((currentPlayId == 0) || (currentPlayId == null)) {
+      return; // Do not support setting speed on live
+    }
+    if (!((speedIdx >= 0) && (speedIdx < PLAYBACK_SPEEDS.length))) {
+      return;
+    }
+    video.playbackRate = PLAYBACK_SPEEDS[speedIdx];
+    currentSpeedIdx = speedIdx;
+  }
 
   $(window).bind("orientationchange", function() {
-    positionControls();
+    positionControl();
   });
 
   $(window).bind("resize", function() {
+    positionControl();
     resizeVideo();
   });
-
-  function getRecordingsGroupedByDay() {
-    let recs = [], currentDay = undefined;
-
-    for (let i = 0; i < RECS.length; i += FIELD_WIDTH) {
-      let [file, year, month, day, hrs, mins, secs] = RECS.slice(i, i + FIELD_WIDTH);
-
-      if (currentDay != day) {
-        recs.push([]);
-        currentDay = day;
-      }
-      recs.at(-1).push([file, year, month, day, hrs, mins, secs]);
-    }
-    return recs;
-  }
   </script>
-  <body id="body">
-    <video id="video" type="video/mp4" playsinline autoplay muted controls></video>
-    <div class="holder">
-      <div style="font-size: 0" id="main"></div>
+  <body>
+    <div class="container">
+      <video id="video" type="video/mp4" playsinline autoplay muted controls></video>
       <div id="control">
-        <p></p>
       </div>
     </div>
   </body>
