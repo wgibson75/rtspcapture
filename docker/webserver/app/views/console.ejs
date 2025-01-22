@@ -17,7 +17,7 @@
 
       cameras.forEach(function(name) {
         let linkUrl = `/play?c=${name}`;
-        let videoUrl = '/' + CAPTURE_DIR + '/' + name + '/low_res/live.m3u8';
+        let videoUrl = `/${CAPTURE_DIR}/${name}/low_res/live.m3u8`;
 
         document.writeln('<a href="' + linkUrl + '">');
         document.writeln('<video style="vertical-align: top" width="' + VIDEO_WIDTH + '" src="' + videoUrl + '" autoplay playsinline>');

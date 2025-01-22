@@ -6,64 +6,83 @@
     <script src="jquery-3.7.1.min.js"></script>
     <script src="jquery-ui-1-13-2.min.js"></script>
     <style>
-      body {
-        background-color: black;
-        margin: 0;
-      }
 
-      table {
-        border-spacing: 0px;
-      }
+    body {
+      margin: 0;
+      background-color: black;
+    }
 
-      td {
-        padding: 0px;
-        font-size: 14pt;
-      }
+    div {
+      color: yellow;
+    }
 
-      td.rule {
-        width: 30px;
-      }
+    hr {
+      border: 0;
+      width: 30px;
+      height: 2px;
+      background-image: linear-gradient(to right, rgba(255, 255, 0, 0), rgba(255, 255, 0, 0.75), rgba(255, 255, 0, 0));
+    }
 
-      hr {
-        border: 0;
-        height: 2px;
-        background-image: linear-gradient(to right, rgba(255, 255, 0, 0), rgba(255, 255, 0, 0.75), rgba(255, 255, 0, 0));
-      }
+    #fullscreen {
+      position: relative;
+      overflow: hidden;
+      width: 100%;
+      height: 100%;
+    }
 
-      .container {
-        position: relative;
-        overflow: hidden;
-        width: 100%;
-        height: 100%;
-      }
+    #video {
+      font-size: 0pt;
+    }
 
-      #control {
-        position: absolute;
-        overflow: scroll;
-        scrollbar-width: none;
-        background-color: rgba(128, 128, 128, 0.5);
-        color: yellow;
-      }
+    #control {
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      border-radius: 6px;
+      background-color: rgba(128, 128, 128, 0.5);
+    }
 
-      #video {
-        font-size: 0pt;
-      }
+    #buttons {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      border-radius: 6px 6px 0px 0px;
+      background-color: rgba(160, 160, 160, 0.5);
+    }
 
-      tr.playEntry {
-        color: yellow;
-        text-align: center;
-      }
+    #entries {
+      overflow: scroll;
+      scrollbar-width: none;
+      border-radius: 0px 0px 6px 6px;
+    }
 
-      tr.dayBound {
-        color: yellow;
-        background-color: rgba(51, 51, 255, 0.5);
-        text-align: center;
-      }
+    #playback-state {
+      text-align: center;
+      font-style: italic;
+      border-radius: 0px 0px 0px 0px;
+      background-color: rgba(160, 160, 160, 0.5);
+    }
+    
+    .button-highlight {
+      border-radius: 4px 4px 4px 4px;
+      background-color: rgba(0, 255, 255, 0.5);
+    }
 
-      tr.selected {
-        background-color: rgba(32, 32, 32, 0.5);
-        text-align: center; 
-      }
+    .entry-day-boundary {
+      text-align: center;
+      background-color: rgba(100, 100, 255, 0.5);
+    }
+
+    .entry-playback {
+      display: flex;
+      flex-direction: row;
+      text-align: center;
+    }
+
+    .entry-playback-selected {
+      background-color: rgba(32, 32, 32, 0.5);
+    }
+
     </style>
   </head>
   <script>
@@ -83,7 +102,7 @@
   const MARGIN_CONTROL_RHT_PCT = 5;
   const HEIGHT_CONTROL_PCT = 85;
 
-  const MAKE_CONTROL_DRAGGABLE = false;
+  const MAKE_CONTROL_DRAGGABLE = true;
   const PLAYBACK_SPEEDS = [0, 0.5, 1, 2, 4, 8, 16];
   const PLAYBACK_SPEED_NORMAL_IDX = 2;
 
@@ -95,6 +114,10 @@
 
   $(document).ready(function () {
     video = document.getElementById("video");
+    resizeVideo();
+
+    initControl();
+    positionControl();
 
     if (MAKE_CONTROL_DRAGGABLE) {
       $(function() {
@@ -102,14 +125,16 @@
       });
     }
 
-    resizeVideo();
+    play(0, 0, 0); // Play live by default
+  });
 
-    // Must load data into the control before positioning
-    initControl();
+  $(window).bind("orientationchange", function() {
     positionControl();
+  });
 
-    // Play live streaming by default
-    playPause(0, 0, 0);
+  $(window).bind("resize", function() {
+    positionControl();
+    resizeVideo();
   });
 
   function loadRecordingsGroupedByDay() {
@@ -127,6 +152,40 @@
     return recs;
   }
 
+  function resizeVideo() {
+    video.setAttribute("width", window.innerWidth);
+  }
+
+  function initControl() {
+    if (RECORDINGS.length == 0) return;
+
+    for (let dayIdx = 0, id = 0; dayIdx < RECORDINGS.length; dayIdx++) {
+      for (let recIdx = 0; recIdx < RECORDINGS[dayIdx].length; recIdx++, id++) {
+        let [file, year, month, date, day, hrs, mins, secs] = RECORDINGS[dayIdx][recIdx];
+
+        // Format certain time fields
+        date  = ("0" + date).slice(-2);
+        month = ("0" + (month + 1)).slice(-2);
+        hrs   = ("0" + hrs).slice(-2);
+        mins  = ("0" + mins).slice(-2);
+        secs  = ("0" + secs).slice(-2);
+
+        // Show day for day boundary
+        if ((dayIdx != 0) && (recIdx ==0)) {
+          let text = `${DAYS[day]} ${date}-${month}-${year}`;
+          $("#entries").append(`<div class="entry-day-boundary">${text}</div>`);
+        }
+
+        let text = ((dayIdx == 0) && (recIdx == 0)) ? "Live" : `${hrs}:${mins}:${secs}`;
+        $("#entries").append(
+          `<div class="entry-playback" id="${id}" onclick="play(${id},${dayIdx},${recIdx})">` +
+          `  <div><hr></div><div style="flex-grow: 1">${text}</div><div><hr></div>` +
+          "</div>"
+        );
+      }
+    }
+  }
+
   function positionControl() {
     orientation = window.orientation;
     // Portrait
@@ -140,154 +199,73 @@
     }
   }
 
-  function resizeVideo() {
-    video.setAttribute("width", window.innerWidth);
-  }
-
-  function initControl() {
-    if (RECORDINGS.length == 0) return;
-
-    let control = document.getElementById('control');
-    let table = document.createElement('table');
-
-    let id = 0;
-    for (let dayIdx = 0; dayIdx < RECORDINGS.length; dayIdx++) {
-      for (let recIdx = 0; recIdx < RECORDINGS[dayIdx].length; recIdx++) {
-        let [file, year, month, date, day, hrs, mins, secs] = RECORDINGS[dayIdx][recIdx];
-
-        // Format certain time fields
-        date  = ("0" + date).slice(-2);
-        month = ("0" + (month + 1)).slice(-2);
-        hrs   = ("0" + hrs).slice(-2);
-        mins  = ("0" + mins).slice(-2);
-        secs  = ("0" + secs).slice(-2);
-
-        // Show day for day boundary
-        if ((dayIdx != 0) && (recIdx ==0)) {
-          let text = `${DAYS[day]} ${date}-${month}-${year}`;
-          let row = createRowForDayBoundary(text);
-          table.appendChild(row);
-        }
-
-        let text = ((dayIdx == 0) && (recIdx == 0)) ? "Live" : `${hrs}:${mins}:${secs}`;
-        let row = createRowForPlayEntry(id++, dayIdx, recIdx, text);
-        table.appendChild(row);
-      }
-    }
-    control.appendChild(table);
-  }
-
-  function createRowForDayBoundary(text) {
-    let row = document.createElement("tr");
-    row.setAttribute("class", "dayBound");
-
-    let cell = document.createElement("td");
-    cell.setAttribute("colspan", "3");
-    cell.innerHTML = text;
-    row.appendChild(cell);
-
-    return row;
-  }
-
-  function createRowForPlayEntry(id, dayIdx, recIdx, text) {
-    let row = document.createElement("tr");
-    row.setAttribute("class", "playEntry");
-    row.setAttribute("id", id);
-
-    let cell1 = document.createElement("td");
-    let cell2 = document.createElement("td")
-    let cell3 = document.createElement("td");
-
-    cell1.setAttribute("class", "rule");
-    cell1.setAttribute("onclick", "playSpeedDown()");
-    cell2.setAttribute("onclick", `playPause(${id},${dayIdx},${recIdx})`);
-    cell2.innerHTML = text;
-    cell3.setAttribute("class", "rule");
-    cell3.setAttribute("onclick", "playSpeedUp()");
-
-    cell1.appendChild(document.createElement("hr"));
-    cell3.appendChild(document.createElement("hr"));
-
-    row.appendChild(cell1);
-    row.appendChild(cell2);
-    row.appendChild(cell3);
-
-    return row;
-  }
-
-  function playPause(id, dayIdx, recIdx) {
-    let isPlayToggle = false;
-
+  function play(id, dayIdx, recIdx) {
     // Handle selection highlight
     if ((currentPlayId != null) && (currentPlayId != id)) {
-      $("#" + currentPlayId).removeClass("selected");
+      $("#" + currentPlayId).removeClass("entry-playback-selected");
     }
-    $("#" + id).addClass("selected");
+    $("#" + id).addClass("entry-playback-selected");
+    currentPlayId = id;
 
-    if (currentPlayId == id) {
-      isPlayToggle = true;
-      isPaused = !isPaused;
-    }
-    else {
-      isPaused = false;
-      currentPlayId = id;
-    }
+    video.src = ((dayIdx == 0) && (recIdx == 0)) ? LIVE_URL : `/${CAPTURE_DIR}/${CAMERA}/${RECORDINGS[dayIdx][recIdx][0]}`;
 
-    if (isPlayToggle) {
-      if (isPaused) {
-        video.pause();
-      }
-      else {
-        video.play();
-      }
-      return;
-    }
-    else {
-      video.src = ((dayIdx == 0) && (recIdx == 0))
-        ? LIVE_URL : `/${CAPTURE_DIR}/${CAMERA}/${RECORDINGS[dayIdx][recIdx][0]}`;
+    currentSpeedIdx = PLAYBACK_SPEED_NORMAL_IDX;
+    isPaused = false;
 
-      setPlaybackSpeed(PLAYBACK_SPEED_NORMAL_IDX);
-    }
+    showPlaybackState();
   }
 
-  function playSpeedUp() {
-    if (currentSpeedIdx >= PLAYBACK_SPEEDS.length) {
-      return;
-    }
+  function togglePlayPause(button) {
+    isPaused = !isPaused;
+
+    if (isPaused) video.pause();
+    else video.play();
+
+    showPlaybackState();
+  }
+
+  function showPlaybackState() {
+    $("#play-pause").html(isPaused ? "Play" : "Pause");
+
+    let state = isPaused ? "Paused" : `x${PLAYBACK_SPEEDS[currentSpeedIdx]}`;
+    $("#playback-state").html(state);
+  }
+
+  function speedUp() {
+    if (!currentPlayId) return;                                  // Ignore setting speed on live
+    if (isPaused) return;                                        // Ignore if we are paused
+    if (currentSpeedIdx == (PLAYBACK_SPEEDS.length - 1)) return; // Ignore if current speed is highest
+
     setPlaybackSpeed(++currentSpeedIdx);
   }
 
-  function playSpeedDown() {
-    if (currentSpeedIdx == 0) {
-      return;
-    }
+  function speedDown() {
+    if (!currentPlayId) return;       // Ignore setting speed on live
+    if (isPaused) return;             // Ignore if we are paused
+    if (currentSpeedIdx == 0) return; // Ignore if current speed is lowest
+
     setPlaybackSpeed(--currentSpeedIdx);
   }
 
   function setPlaybackSpeed(speedIdx) {
-    if ((currentPlayId == 0) || (currentPlayId == null)) {
-      return; // Do not support setting speed on live
-    }
-    if (!((speedIdx >= 0) && (speedIdx < PLAYBACK_SPEEDS.length))) {
-      return;
-    }
     video.playbackRate = PLAYBACK_SPEEDS[speedIdx];
     currentSpeedIdx = speedIdx;
+
+    showPlaybackState();
   }
 
-  $(window).bind("orientationchange", function() {
-    positionControl();
-  });
-
-  $(window).bind("resize", function() {
-    positionControl();
-    resizeVideo();
-  });
   </script>
   <body>
-    <div class="container">
+    <div id="fullscreen">
       <video id="video" type="video/mp4" playsinline autoplay muted controls></video>
       <div id="control">
+        <div id="buttons">
+          <div id="speed-down" class="button" onclick="speedDown(this)">&lt;&lt;</div>
+          <div id="play-pause" class="button" onclick="togglePlayPause(this)">Pause</div>
+          <div id="speed-up" class="button" onclick="speedUp(this)">&gt;&gt;</div>
+        </div>
+        <div id="playback-state"></div>
+        <div id="entries"></div>
       </div>
     </div>
   </body>
