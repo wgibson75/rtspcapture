@@ -194,9 +194,9 @@
   }
 
   function positionControl() {
-    $('#control').css("height", `${HEIGHT_CONTROL_PCT}%`);
-    $('#control').css("top", `${MARGIN_CONTROL_TOP_PCT}%`);
-    $('#control').css("left", window.innerWidth - $("#control").width() - (window.innerWidth * 0.05));
+    $("#control").css("height", `${HEIGHT_CONTROL_PCT}%`);
+    $("#control").css("top", `${MARGIN_CONTROL_TOP_PCT}%`);
+    $("#control").css("left", window.innerWidth - $("#control").width() - (window.innerWidth * 0.05));
   }
 
   function play(id, dayIdx, recIdx) {
@@ -210,7 +210,7 @@
     video.src = ((dayIdx == 0) && (recIdx == 0)) ? LIVE_URL : `/${CAPTURE_DIR}/${CAMERA}/${RECORDINGS[dayIdx][recIdx][0]}`;
 
     currentSpeedIdx = PLAYBACK_SPEED_NORMAL_IDX;
-    isPaused = false;
+    setCurrentSpeed();
 
     showPlaybackState();
   }
