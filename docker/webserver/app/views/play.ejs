@@ -66,7 +66,7 @@
     
     .button-highlight {
       border-radius: 4px 4px 4px 4px;
-      background-color: rgba(0, 255, 255, 0.5);
+      background-color: rgba(190, 190, 190, 0.5);
     }
 
     .entry-day-boundary {
@@ -101,17 +101,19 @@
 
   const MARGIN_CONTROL_TOP_PCT = 5;
   const MARGIN_CONTROL_RHT_PCT = 5;
-  const HEIGHT_CONTROL_PCT = 85;
+  const HEIGHT_CONTROL_PCT     = 85;
 
-  const MAKE_CONTROL_DRAGGABLE = true;
-  const PLAYBACK_SPEEDS = [0, 0.5, 1, 2, 4, 8, 16];
-  const PLAYBACK_SPEED_NORMAL_IDX = 2;
+  const MAKE_CONTROL_DRAGGABLE         = true;
+  const PLAYBACK_SPEEDS                = [0, 0.5, 1, 2, 4, 8, 16];
+  const PLAYBACK_SPEED_NORMAL_IDX      = 2;
+  const BUTTON_PRESS_HIGHLIGHT_TIME_MS = 500;
 
-  var currentPlayId = null;
-  var isPaused = null;
-  var currentSpeedIdx = null;
-  var orientation;
-  var video;
+  var currentPlayId      = null;
+  var isPaused           = null;
+  var currentSpeedIdx    = null;
+  var buttonPressTimeout = null;
+  var orientation        = null;
+  var video              = null;
 
   $(document).ready(function () {
     video = document.getElementById("video");
@@ -194,7 +196,7 @@
   function positionControl() {
     $('#control').css("height", `${HEIGHT_CONTROL_PCT}%`);
     $('#control').css("top", `${MARGIN_CONTROL_TOP_PCT}%`);
-    $('#control').css("left", window.innerWidth - $('#control').width() - (window.innerWidth * 0.05));
+    $('#control').css("left", window.innerWidth - $("#control").width() - (window.innerWidth * 0.05));
   }
 
   function play(id, dayIdx, recIdx) {
@@ -214,6 +216,8 @@
   }
 
   function togglePlayPause(button) {
+    showButtonPress(button);
+
     isPaused = !isPaused;
 
     if (isPaused) video.pause();
@@ -222,19 +226,13 @@
     showPlaybackState();
   }
 
-  function showPlaybackState() {
-    $("#play-pause").html(isPaused ? "Play" : "Pause");
-
-    let state = isPaused ? "Paused" : `x${PLAYBACK_SPEEDS[currentSpeedIdx]}`;
-    $("#playback-state").html(state);
-  }
-
-  function speedUp() {
+  function speedUp(button) {
     // This assumes the slowest speed is zero (i.e. paused) and
     // the speed can never be negative (i.e. reverse playback)
 
     if (!currentPlayId) return;                                                 // Ignore setting speed on live
     if ((currentSpeedIdx == (PLAYBACK_SPEEDS.length - 1)) && !isPaused) return; // Ignore if current speed is highest
+    showButtonPress(button);
 
     if (isPaused) currentSpeedIdx = 0;
     ++currentSpeedIdx;
@@ -245,13 +243,13 @@
     setCurrentSpeed();
   }
 
-  function speedDown() {
+  function speedDown(button) {
     if (!currentPlayId) return;       // Ignore setting speed on live
     if (isPaused) return;             // Ignore if we are paused
     if (currentSpeedIdx == 0) return; // Ignore if current speed is lowest
+    showButtonPress(button);
 
     --currentSpeedIdx;
-
     setCurrentSpeed();
   }
 
@@ -261,6 +259,30 @@
 
     video.playbackRate = speed;
     showPlaybackState();
+  }
+
+  function showPlaybackState() {
+    $("#play-pause").html(isPaused ? "Play" : "Pause");
+
+    let state = isPaused ? "Paused" : `x${PLAYBACK_SPEEDS[currentSpeedIdx]}`;
+    $("#playback-state").html(state);
+  }
+
+  function showButtonPress(button) {
+    if (buttonPressTimeout != null) {
+      clearTimeout(buttonPressTimeout);
+      hideButtonPress(pressedButton);
+    }
+    $(`#${button.id}`).toggleClass("button-highlight");
+
+    pressedButton      = button;
+    buttonPressTimeout = setTimeout(hideButtonPress, BUTTON_PRESS_HIGHLIGHT_TIME_MS, button);
+  }
+  
+  function hideButtonPress(button) {
+    $(`#${button.id}`).toggleClass("button-highlight");
+    buttonPressTimeout = null;
+    pressedButton = null;
   }
 
   </script>
