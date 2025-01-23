@@ -118,7 +118,7 @@
   $(document).ready(function () {
     video = document.getElementById("video");
     video.addEventListener("ended", e => {
-      $(`#${currentPlayId - 1}`).click(); // Play next video when current ends
+      if (currentPlayId > 0) $(`#${currentPlayId - 1}`).click(); // Play next video when current ends
     });
 
     resizeVideo();
@@ -132,7 +132,7 @@
       });
     }
 
-    play(0, 0, 0); // Play live by default
+    $("#0").click(); // Play live by default i.e. entry ID 0
   });
 
   $(window).bind("orientationchange", function() {
