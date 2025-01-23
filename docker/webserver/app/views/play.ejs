@@ -115,6 +115,10 @@
 
   $(document).ready(function () {
     video = document.getElementById("video");
+    video.addEventListener("ended", e => {
+      $(`#${currentPlayId - 1}`).click(); // Play next video when current ends
+    });
+
     resizeVideo();
 
     initControl();
@@ -122,7 +126,7 @@
 
     if (MAKE_CONTROL_DRAGGABLE) {
       $(function() {
-        $('#control').draggable();
+        $("#control").draggable();
       });
     }
 
@@ -233,11 +237,19 @@
   }
 
   function speedUp() {
-    if (!currentPlayId) return;                                  // Ignore setting speed on live
-    if (isPaused) return;                                        // Ignore if we are paused
-    if (currentSpeedIdx == (PLAYBACK_SPEEDS.length - 1)) return; // Ignore if current speed is highest
+    // This assumes the slowest speed is zero (i.e. paused) and
+    // the speed can never be negative (i.e. reverse playback)
 
-    setPlaybackSpeed(++currentSpeedIdx);
+    if (!currentPlayId) return;                                                 // Ignore setting speed on live
+    if ((currentSpeedIdx == (PLAYBACK_SPEEDS.length - 1)) && !isPaused) return; // Ignore if current speed is highest
+
+    if (isPaused) currentSpeedIdx = 0;
+    ++currentSpeedIdx;
+
+    // Must unpause playback for speed change to be possible
+    if (video.paused) video.play();
+
+    setCurrentSpeed();
   }
 
   function speedDown() {
@@ -245,13 +257,16 @@
     if (isPaused) return;             // Ignore if we are paused
     if (currentSpeedIdx == 0) return; // Ignore if current speed is lowest
 
-    setPlaybackSpeed(--currentSpeedIdx);
+    --currentSpeedIdx;
+
+    setCurrentSpeed();
   }
 
-  function setPlaybackSpeed(speedIdx) {
-    video.playbackRate = PLAYBACK_SPEEDS[speedIdx];
-    currentSpeedIdx = speedIdx;
+  function setCurrentSpeed() {
+    speed = PLAYBACK_SPEEDS[currentSpeedIdx];
+    isPaused = (speed == 0) ? true : false;
 
+    video.playbackRate = speed;
     showPlaybackState();
   }
 
