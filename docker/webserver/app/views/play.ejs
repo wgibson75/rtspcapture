@@ -192,16 +192,9 @@
   }
 
   function positionControl() {
-    orientation = window.orientation;
-    // Portrait
-    if (orientation == 0) {
-    }
-    // Otherwise landscape
-    else {
-      $('#control').css("height", `${HEIGHT_CONTROL_PCT}%`);
-      $('#control').css("top", `${MARGIN_CONTROL_TOP_PCT}%`);
-      $('#control').css("left", window.innerWidth - $('#control').width() - (window.innerWidth * 0.05));
-    }
+    $('#control').css("height", `${HEIGHT_CONTROL_PCT}%`);
+    $('#control').css("top", `${MARGIN_CONTROL_TOP_PCT}%`);
+    $('#control').css("left", window.innerWidth - $('#control').width() - (window.innerWidth * 0.05));
   }
 
   function play(id, dayIdx, recIdx) {
