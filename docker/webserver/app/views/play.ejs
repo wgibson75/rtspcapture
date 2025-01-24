@@ -95,8 +95,6 @@
   RECS_DATA.push(<%- recordings %>);
   const FIELD_WIDTH = 8; // Number of fields for each recording
 
-  const RECORDINGS = loadRecordingsGroupedByDay();
-
   const DAYS = ["Mon", "Tue", "Wed", "Thur", "Fri", "Sat", "Sun"];
 
   const MARGIN_CONTROL_TOP_PCT = 5;
@@ -104,25 +102,158 @@
   const HEIGHT_CONTROL_PCT     = 85;
 
   const MAKE_CONTROL_DRAGGABLE         = true;
-  const PLAYBACK_SPEEDS                = [0, 0.5, 1, 2, 4, 8, 16];
-  const PLAYBACK_SPEED_NORMAL_IDX      = 2;
   const BUTTON_PRESS_HIGHLIGHT_TIME_MS = 500;
 
+  var RECORDINGS = null;;
+  var PLAYBACK   = null;
+
   var currentPlayId      = null;
-  var isPaused           = null;
-  var currentSpeedIdx    = null;
   var buttonPressTimeout = null;
-  var orientation        = null;
-  var video              = null;
+
+  class Recordings {
+    #recordings      = [];   // Recordings in reverse chronological order (including non playable live first)
+    #dayBoundaryIdxs = [];   // List of day boundary indexes i.e. indexes of first recording in each day
+    #captureDir      = null; // Video capture directory
+    #camera          = null; // Camera name
+
+    constructor(captureDir, camera, data, fieldWidth) {
+      this.#captureDir = captureDir;
+      this.#camera     = camera;
+
+      this.#loadRecordings(data, fieldWidth);
+    }
+
+    getNumRecordings() {
+      return this.#recordings.length;
+    }
+
+    getDayBoundaryIndexes() {
+      return this.#dayBoundaryIdxs;
+    }
+
+    getInfo(idx) {
+      if ((idx < 0) || (idx >= this.#recordings.length)) return;
+
+      return this.#recordings[idx];
+    }
+
+    getPlayUrl(idx) {
+      if ((idx < 0) || (idx >= this.#recordings.length)) return;
+
+      // Return the live stream URL for first recording or playback URL otherwise
+      return (idx == 0) ? `/${this.#captureDir}/${this.#camera}/high_res/live.m3u8`
+                        : `/${this.#captureDir}/${this.#camera}/${this.#recordings[idx][0]}`;
+    }
+
+    #loadRecordings(data, fieldWidth) {
+      for (let fieldIdx = 0, recIdx = 0, currentDay = null; fieldIdx < data.length; fieldIdx += fieldWidth, recIdx++) {
+        let [file, year, month, date, day, hrs, mins, secs] = data.slice(fieldIdx, fieldIdx + fieldWidth);
+
+        if (currentDay != day) {
+          if (currentDay != null) {
+            this.#dayBoundaryIdxs.push(recIdx);
+          }
+          currentDay = day;
+        }
+        this.#recordings.push([file, year, month, date, day, hrs, mins, secs]);
+      }
+    };
+  }
+
+  class Playback {
+    #SPEEDS           = [0, 0.5, 1, 2, 4, 8, 16]; // Supported playback speeds
+    #NORMAL_SPEED_IDX = 2;                        // Index of normal playback speed
+    #PAUSED_SPEED_IDX = 0;                        // Effective index of paused playback speed
+
+    #video    = null;
+    #url      = null;
+    #speedIdx = null;
+    #isPaused = null;
+
+    #sameSpeedForNextPlay = false;
+
+    constructor(videoElementId) {
+      this.#video = document.getElementById(videoElementId);
+    }
+
+    play(url) {
+      if (!url) return false;
+
+      this.#url = url;
+      this.#isPaused = false;
+
+      if (this.#sameSpeedForNextPlay) {
+        this.#sameSpeedForNextPlay = false;
+      }
+      else {
+        this.#speedIdx = this.#NORMAL_SPEED_IDX;;
+      }
+
+      this.#video.src = url;
+      this.#video.playbackRate = this.#SPEEDS[this.#speedIdx];
+
+      return true;
+    }
+
+    togglePlayPause() {
+      if (!this.#url) return false;
+
+      if (this.#isPaused) {
+        this.#video.play();
+        this.#isPaused = false;
+      }
+      else {
+        this.#video.pause()
+        this.#isPaused = true;
+      }
+      return true;
+    }
+
+    isPaused() {
+      return this.#isPaused;
+    }
+
+    speedUp() {
+      if (!this.#url) return false;                        // Ignore if not playing anything
+      if ((this.#speedIdx == (this.#SPEEDS.length - 1)) && // Ignore if already at max speed
+          !this.#isPaused) return false;                   // and not paused
+
+      if (this.#isPaused) this.#speedIdx = this.#PAUSED_SPEED_IDX; // Set speed index to stopped if paused
+      this.#video.playbackRate = this.#SPEEDS[++this.#speedIdx];   // Set the incremented playback rate
+      if (this.#isPaused) this.togglePlayPause();                  // Toggle playback to commence if paused
+
+      return true;
+    }
+
+    speedDown() {
+      if (!this.#url) return false;          // Ignore if not playing anything
+      if (this.#speedIdx == 0) return false; // Ignore if already at min speed
+
+      this.#video.playbackRate = this.#SPEEDS[--this.#speedIdx]; // Set the decremented playback rate
+      if (this.#isPaused) this.togglePlayPause();                // Toggle playback to commence if paused
+
+      return true;
+    }
+
+    maintainSpeedForNextPlay() {
+      this.#sameSpeedForNextPlay = true;
+    }
+
+    getStatusString() {
+      return (this.#isPaused) ? "Paused" : `x${this.#SPEEDS[this.#speedIdx]}`;
+    }
+  }
 
   $(document).ready(function () {
-    video = document.getElementById("video");
-    video.addEventListener("ended", e => {
-      if (currentPlayId > 0) $(`#${currentPlayId - 1}`).click(); // Play next video when current ends
+    RECORDINGS = new Recordings(CAPTURE_DIR, CAMERA, RECS_DATA, FIELD_WIDTH);
+    PLAYBACK = new Playback("video");
+
+    document.getElementById("video").addEventListener("ended", e => {
+      PLAYBACK.maintainSpeedForNextPlay();
+      $(`#${currentPlayId - 1}`).click(); // Play next video when current ends
     });
 
     resizeVideo();
-
     initControl();
     positionControl();
 
@@ -164,32 +295,38 @@
   }
 
   function initControl() {
-    if (RECORDINGS.length == 0) return;
+    // Build lookup table for indexes of recordings on day boundary
+    let dayRecIdxLookup = {};
+    let dayRecIdxs = RECORDINGS.getDayBoundaryIndexes();
+    for (let i = 0; i < dayRecIdxs.length; i++) {
+      dayRecIdxLookup[dayRecIdxs[i]]++;
+    }
 
-    for (let dayIdx = 0, id = 0; dayIdx < RECORDINGS.length; dayIdx++) {
-      for (let recIdx = 0; recIdx < RECORDINGS[dayIdx].length; recIdx++, id++) {
-        let [file, year, month, date, day, hrs, mins, secs] = RECORDINGS[dayIdx][recIdx];
+    // Now populate all entries in the control pane showing
+    for (let idx = 0; idx < RECORDINGS.getNumRecordings(); idx++) {
+      let [file, year, month, date, day, hrs, mins, secs] = RECORDINGS.getInfo(idx);
 
-        // Format certain time fields
-        date  = ("0" + date).slice(-2);
-        month = ("0" + (month + 1)).slice(-2);
-        hrs   = ("0" + hrs).slice(-2);
-        mins  = ("0" + mins).slice(-2);
-        secs  = ("0" + secs).slice(-2);
+      // Format certain time fields
+      date  = ("0" + date).slice(-2);
+      month = ("0" + (month + 1)).slice(-2);
+      hrs   = ("0" + hrs).slice(-2);
+      mins  = ("0" + mins).slice(-2);
+      secs  = ("0" + secs).slice(-2);
 
-        // Show day for day boundary
-        if ((dayIdx != 0) && (recIdx ==0)) {
-          let text = `${DAYS[day]} ${date}-${month}-${year}`;
-          $("#entries").append(`<div class="entry-day-boundary">${text}</div>`);
-        }
-
-        let text = ((dayIdx == 0) && (recIdx == 0)) ? "Live" : `${hrs}:${mins}:${secs}`;
-        $("#entries").append(
-          `<div class="entry-playback" id="${id}" onclick="play(${id},${dayIdx},${recIdx})">` +
-          `  <div><hr></div><div style="flex-grow: 1">${text}</div><div><hr></div>` +
-          "</div>"
-        );
+      // Show day boundary
+      if (idx in dayRecIdxLookup) {
+        let text = `${DAYS[day]} ${date}-${month}-${year}`;
+        $("#entries").append(`<div class="entry-day-boundary">${text}</div>`);
       }
+
+      let text = (idx== 0) ? "Live" : `${hrs}:${mins}:${secs}`; // First entry is live
+
+      // Use the recording index as the entry ID
+      $("#entries").append(
+        `<div class="entry-playback" id="${idx}" onclick="play(${idx})">` +
+        `  <div><hr></div><div style="flex-grow: 1">${text}</div><div><hr></div>` +
+        "</div>"
+      );
     }
   }
 
@@ -199,73 +336,44 @@
     $("#control").css("left", window.innerWidth - $("#control").width() - (window.innerWidth * 0.05));
   }
 
-  function play(id, dayIdx, recIdx) {
+  // Note: recording index and corresponding entry ID in control pane are the same
+  function play(idx) {
+    PLAYBACK.play(RECORDINGS.getPlayUrl(idx));
+
     // Handle selection highlight
-    if ((currentPlayId != null) && (currentPlayId != id)) {
+    if ((currentPlayId != null) && (currentPlayId != idx)) {
       $("#" + currentPlayId).removeClass("entry-playback-selected");
     }
-    $("#" + id).addClass("entry-playback-selected");
-    currentPlayId = id;
-
-    video.src = ((dayIdx == 0) && (recIdx == 0)) ? LIVE_URL : `/${CAPTURE_DIR}/${CAMERA}/${RECORDINGS[dayIdx][recIdx][0]}`;
-
-    currentSpeedIdx = PLAYBACK_SPEED_NORMAL_IDX;
-    setCurrentSpeed();
+    $("#" + idx).addClass("entry-playback-selected");
+    currentPlayId = idx;
 
     showPlaybackState();
   }
 
   function togglePlayPause(button) {
-    showButtonPress(button);
-
-    isPaused = !isPaused;
-
-    if (isPaused) video.pause();
-    else video.play();
-
-    showPlaybackState();
+    if (PLAYBACK.togglePlayPause()) {
+      showButtonPress(button);
+      showPlaybackState();
+    }
   }
 
   function speedUp(button) {
-    // This assumes the slowest speed is zero (i.e. paused) and
-    // the speed can never be negative (i.e. reverse playback)
-
-    if (!currentPlayId) return;                                                 // Ignore setting speed on live
-    if ((currentSpeedIdx == (PLAYBACK_SPEEDS.length - 1)) && !isPaused) return; // Ignore if current speed is highest
-    showButtonPress(button);
-
-    if (isPaused) currentSpeedIdx = 0;
-    ++currentSpeedIdx;
-
-    // Must unpause playback for speed change to be possible
-    if (video.paused) video.play();
-
-    setCurrentSpeed();
+    if (PLAYBACK.speedUp()) {
+      showButtonPress(button);
+      showPlaybackState();
+    }
   }
 
   function speedDown(button) {
-    if (!currentPlayId) return;       // Ignore setting speed on live
-    if (isPaused) return;             // Ignore if we are paused
-    if (currentSpeedIdx == 0) return; // Ignore if current speed is lowest
-    showButtonPress(button);
-
-    --currentSpeedIdx;
-    setCurrentSpeed();
-  }
-
-  function setCurrentSpeed() {
-    speed = PLAYBACK_SPEEDS[currentSpeedIdx];
-    isPaused = (speed == 0) ? true : false;
-
-    video.playbackRate = speed;
-    showPlaybackState();
+    if (PLAYBACK.speedDown()) {
+      showButtonPress(button);
+      showPlaybackState();
+    }
   }
 
   function showPlaybackState() {
-    $("#play-pause").html(isPaused ? "Play" : "Pause");
-
-    let state = isPaused ? "Paused" : `x${PLAYBACK_SPEEDS[currentSpeedIdx]}`;
-    $("#playback-state").html(state);
+    $("#play-pause").html(PLAYBACK.isPaused() ? "Play" : "Pause");
+    $("#playback-state").html(PLAYBACK.getStatusString());
   }
 
   function showButtonPress(button) {
