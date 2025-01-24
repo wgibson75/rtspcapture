@@ -101,6 +101,7 @@
   const MARGIN_CONTROL_RHT_PCT = 5;
   const HEIGHT_CONTROL_PCT     = 85;
 
+  const LIVE_PLAY_ID                   = 0; // ID of live playback stream
   const MAKE_CONTROL_DRAGGABLE         = true;
   const BUTTON_PRESS_HIGHLIGHT_TIME_MS = 500;
 
@@ -141,8 +142,9 @@
       if ((idx < 0) || (idx >= this.#recordings.length)) return;
 
       // Return the live stream URL for first recording or playback URL otherwise
-      return (idx == 0) ? `/${this.#captureDir}/${this.#camera}/high_res/live.m3u8`
-                        : `/${this.#captureDir}/${this.#camera}/${this.#recordings[idx][0]}`;
+      return (idx == LIVE_PLAY_ID)
+        ? `/${this.#captureDir}/${this.#camera}/high_res/live.m3u8`
+        : `/${this.#captureDir}/${this.#camera}/${this.#recordings[idx][0]}`;
     }
 
     #loadRecordings(data, fieldWidth) {
@@ -163,7 +165,7 @@
   class Playback {
     #SPEEDS           = [0, 0.5, 1, 2, 4, 8, 16]; // Supported playback speeds
     #NORMAL_SPEED_IDX = 2;                        // Index of normal playback speed
-    #PAUSED_SPEED_IDX = 0;                        // Effective index of paused playback speed
+    #PAUSED_SPEED_IDX = 0;                        // Index of paused playback speed
 
     #video    = null;
     #url      = null;
@@ -246,10 +248,12 @@
 
   $(document).ready(function () {
     RECORDINGS = new Recordings(CAPTURE_DIR, CAMERA, RECS_DATA, FIELD_WIDTH);
-    PLAYBACK = new Playback("video");
+    PLAYBACK   = new Playback("video");
 
     document.getElementById("video").addEventListener("ended", e => {
-      PLAYBACK.maintainSpeedForNextPlay();
+      if (currentPlayId != 1) {
+        PLAYBACK.maintainSpeedForNextPlay();
+      }
       $(`#${currentPlayId - 1}`).click(); // Play next video when current ends
     });
 
@@ -263,7 +267,7 @@
       });
     }
 
-    $("#0").click(); // Play live by default i.e. entry ID 0
+    $(`#${LIVE_PLAY_ID}`).click(); // Play live by default
   });
 
   $(window).bind("orientationchange", function() {
@@ -274,21 +278,6 @@
     positionControl();
     resizeVideo();
   });
-
-  function loadRecordingsGroupedByDay() {
-    let recs = [], currentDay = undefined;
-
-    for (let i = 0; i < RECS_DATA.length; i += FIELD_WIDTH) {
-      let [file, year, month, date, day, hrs, mins, secs] = RECS_DATA.slice(i, i + FIELD_WIDTH);
-
-      if (currentDay != day) {
-        recs.push([]);
-        currentDay = day;
-      }
-      recs.at(-1).push([file, year, month, date, day, hrs, mins, secs]);
-    }
-    return recs;
-  }
 
   function resizeVideo() {
     video.setAttribute("width", window.innerWidth);
@@ -319,7 +308,7 @@
         $("#entries").append(`<div class="entry-day-boundary">${text}</div>`);
       }
 
-      let text = (idx== 0) ? "Live" : `${hrs}:${mins}:${secs}`; // First entry is live
+      let text = (idx== LIVE_PLAY_ID) ? "Live" : `${hrs}:${mins}:${secs}`; // First entry is live
 
       // Use the recording index as the entry ID
       $("#entries").append(
@@ -358,6 +347,7 @@
   }
 
   function speedUp(button) {
+    if (currentPlayId == LIVE_PLAY_ID) return; // Do not support on live
     if (PLAYBACK.speedUp()) {
       showButtonPress(button);
       showPlaybackState();
@@ -365,6 +355,7 @@
   }
 
   function speedDown(button) {
+    if (currentPlayId == LIVE_PLAY_ID) return; // Do not support on live
     if (PLAYBACK.speedDown()) {
       showButtonPress(button);
       showPlaybackState();
