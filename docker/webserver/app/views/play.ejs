@@ -50,6 +50,10 @@
       background-color: rgba(160, 160, 160, 0.5);
     }
 
+    #flip-position {
+      text-align: center;
+    }
+
     #entries {
       overflow: scroll;
       scrollbar-width: none;
@@ -61,7 +65,7 @@
       font-style: italic;
       border-radius: 0px 0px 0px 0px;
       background-color: rgba(160, 160, 160, 0.5);
-      color: #88cc00;
+      color: #8cff66;
     }
 
     .button {
@@ -69,7 +73,7 @@
        border-width: thin;
        border-color: rgba(64, 64, 64, 0.5);
        background-color: rgba(64, 64, 64, 0.5);
-       color: #88cc00;
+       color: #66ff33;
        padding: 4px;
     }
 
@@ -106,19 +110,20 @@
 
   const DAYS = ["Mon", "Tue", "Wed", "Thur", "Fri", "Sat", "Sun"];
 
-  const MARGIN_CONTROL_TOP_PCT = 5;
-  const MARGIN_CONTROL_RHT_PCT = 5;
-  const HEIGHT_CONTROL_PCT     = 85;
+  const MARGIN_CONTROL_TOP_PCT = 5;  // Top margin of control pane as percentage of screen height
+  const HEIGHT_CONTROL_PCT     = 85; // Height of control pane as percentage of screen height 
 
-  const LIVE_PLAY_ID                   = 0; // ID of live playback stream
-  const MAKE_CONTROL_DRAGGABLE         = true;
-  const BUTTON_PRESS_HIGHLIGHT_TIME_MS = 500;
+  const LIVE_PLAY_ID                   = 0;    // ID of live playback stream
+  const MAKE_CONTROL_DRAGGABLE         = true; // Flags whether to make control pane draggable on supported devices
+  const BUTTON_PRESS_HIGHLIGHT_TIME_MS = 500;  // Duration of button highlight when pressed
 
-  var RECORDINGS = null;;
-  var PLAYBACK   = null;
+  var RECORDINGS = null; // Set to Recordings object to manage recordings data
+  var PLAYBACK   = null; // Set to Playback object to control playback
 
-  var currentPlayId      = null;
-  var buttonPressTimeout = null;
+  var CURRENT_PLAY_ID      = null;  // ID of currently playing recording i.e. recording index
+  var BUTTON_PRESS_TIMEOUT = null;  // Timeout object for button press highlight
+  var IS_IPHONE            = false; // Flags if running on an iPhone device
+  var IS_CONTROL_FLIPPED   = false; // Flags if control position is flipped to other side of screen
 
   class Recordings {
     #recordings      = [];   // Recordings in reverse chronological order (including non playable live first)
@@ -256,14 +261,19 @@
   }
 
   $(document).ready(function () {
+    // Doesn't work for iPad unfortunately i.e. iPad reported as Mac (clearly a bug!)
+    if (/iPhone/.test(navigator.userAgent)) {
+      IS_IPHONE = true;
+    }
+
     RECORDINGS = new Recordings(CAPTURE_DIR, CAMERA, RECS_DATA, FIELD_WIDTH);
     PLAYBACK   = new Playback("video");
 
     document.getElementById("video").addEventListener("ended", e => {
-      if (currentPlayId != 1) {
+      if (CURRENT_PLAY_ID != 1) {
         PLAYBACK.maintainSpeedForNextPlay();
       }
-      $(`#${currentPlayId - 1}`).click(); // Play next video when current ends
+      $(`#${CURRENT_PLAY_ID - 1}`).click(); // Play next video when current ends
     });
 
     resizeVideo();
@@ -326,12 +336,17 @@
         "</div>"
       );
     }
+
+    // Only show button for flipping position on iPhone
+    if (!IS_IPHONE) $('#flip-position').hide();
   }
 
   function positionControl() {
     $("#control").css("height", `${HEIGHT_CONTROL_PCT}%`);
     $("#control").css("top", `${MARGIN_CONTROL_TOP_PCT}%`);
-    $("#control").css("left", window.innerWidth - $("#control").width() - (window.innerWidth * 0.05));
+    $("#control").css("left", IS_CONTROL_FLIPPED
+      ? (window.innerWidth * 0.05)
+      : window.innerWidth - $("#control").width() - (window.innerWidth * 0.05));
   }
 
   // Note: recording index and corresponding entry ID in control pane are the same
@@ -339,11 +354,11 @@
     PLAYBACK.play(RECORDINGS.getPlayUrl(idx));
 
     // Handle selection highlight
-    if ((currentPlayId != null) && (currentPlayId != idx)) {
-      $("#" + currentPlayId).removeClass("entry-playback-selected");
+    if ((CURRENT_PLAY_ID != null) && (CURRENT_PLAY_ID != idx)) {
+      $("#" + CURRENT_PLAY_ID).removeClass("entry-playback-selected");
     }
     $("#" + idx).addClass("entry-playback-selected");
-    currentPlayId = idx;
+    CURRENT_PLAY_ID = idx;
 
     showPlaybackState();
   }
@@ -356,7 +371,7 @@
   }
 
   function speedUp(button) {
-    if (currentPlayId == LIVE_PLAY_ID) return; // Do not support on live
+    if (CURRENT_PLAY_ID == LIVE_PLAY_ID) return; // Do not support on live
     if (PLAYBACK.speedUp()) {
       showButtonPress(button);
       showPlaybackState();
@@ -364,11 +379,17 @@
   }
 
   function speedDown(button) {
-    if (currentPlayId == LIVE_PLAY_ID) return; // Do not support on live
+    if (CURRENT_PLAY_ID == LIVE_PLAY_ID) return; // Do not support on live
     if (PLAYBACK.speedDown()) {
       showButtonPress(button);
       showPlaybackState();
     }
+  }
+
+  function flipControlPosition(button) {
+    showButtonPress(button);
+    IS_CONTROL_FLIPPED = !IS_CONTROL_FLIPPED;
+    positionControl();
   }
 
   function showPlaybackState() {
@@ -377,19 +398,19 @@
   }
 
   function showButtonPress(button) {
-    if (buttonPressTimeout != null) {
-      clearTimeout(buttonPressTimeout);
+    if (BUTTON_PRESS_TIMEOUT != null) {
+      clearTimeout(BUTTON_PRESS_TIMEOUT);
       hideButtonPress(pressedButton);
     }
     $(`#${button.id}`).toggleClass("button-highlight");
 
     pressedButton      = button;
-    buttonPressTimeout = setTimeout(hideButtonPress, BUTTON_PRESS_HIGHLIGHT_TIME_MS, button);
+    BUTTON_PRESS_TIMEOUT = setTimeout(hideButtonPress, BUTTON_PRESS_HIGHLIGHT_TIME_MS, button);
   }
   
   function hideButtonPress(button) {
     $(`#${button.id}`).toggleClass("button-highlight");
-    buttonPressTimeout = null;
+    BUTTON_PRESS_TIMEOUT = null;
     pressedButton = null;
   }
 
@@ -405,6 +426,7 @@
         </div>
         <div id="playback-state"></div>
         <div id="entries"></div>
+        <div id="flip-position" class="button" onclick="flipControlPosition(this)">Flip Position</div>
       </div>
     </div>
   </body>
