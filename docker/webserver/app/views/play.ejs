@@ -1,6 +1,6 @@
 <html>
   <head>
-    <title>CCTV Playback</title>
+    <title>HD Playback</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href="jquery-ui-1-13-2.css" rel="stylesheet">
     <script src="jquery-3.7.1.min.js"></script>
@@ -8,18 +8,17 @@
     <style>
 
     body {
+      position: relative;
+      overflow: hidden;
+      height: 100%;
       margin: 0;
       background-color: black;
     }
 
-    div {
-      color: yellow;
-    }
-
     hr {
-      border: 0;
       width: 30px;
       height: 2px;
+      border: 0;
       background-image: linear-gradient(to right, rgba(255, 255, 0, 0), rgba(255, 255, 0, 0.75), rgba(255, 255, 0, 0));
     }
 
@@ -35,9 +34,9 @@
     }
 
     #control {
-      position: absolute;
       display: flex;
       flex-direction: column;
+      position: absolute;
       border-radius: 6px;
       background-color: rgba(128, 128, 128, 0.5);
     }
@@ -50,35 +49,33 @@
       background-color: rgba(160, 160, 160, 0.5);
     }
 
-    #flip-position {
-      text-align: center;
-    }
-
     #entries {
       overflow: scroll;
       scrollbar-width: none;
       border-radius: 0px 0px 6px 6px;
+      color: yellow;
     }
 
     #playback-state {
+      border-radius: 0px 0px 0px 0px;
       text-align: center;
       font-style: italic;
-      border-radius: 0px 0px 0px 0px;
       background-color: rgba(160, 160, 160, 0.5);
       color: #8cff66;
     }
 
     .button {
-       border-style: solid;
-       border-width: thin;
-       border-color: rgba(64, 64, 64, 0.5);
-       background-color: rgba(64, 64, 64, 0.5);
-       color: #66ff33;
-       padding: 4px;
+      border-style: solid;
+      border-width: thin;
+      border-color: rgba(64, 64, 64, 0.5);
+      border-radius: 6px 6px 6px 6px;
+      padding: 4px;
+      text-align: center;
+      background-color: rgba(64, 64, 64, 0.5);
+      color: #66ff33;
     }
 
     .button-highlight {
-      border-radius: 4px 4px 4px 4px;
       background-color: rgba(190, 190, 190, 0.5);
     }
 
@@ -102,7 +99,6 @@
   <script>
   const CAPTURE_DIR = "<%= capture_dir %>";
   const CAMERA      = "<%= camera_name %>";
-  const LIVE_URL    = `/${CAPTURE_DIR}/${CAMERA}/high_res/live.m3u8`;
 
   const RECS_DATA = [];
   RECS_DATA.push(<%- recordings %>);
@@ -426,7 +422,7 @@
         </div>
         <div id="playback-state"></div>
         <div id="entries"></div>
-        <div id="flip-position" class="button" onclick="flipControlPosition(this)">Flip Position</div>
+        <div id="flip-position" class="button" onclick="flipControlPosition(this)">Reposition</div>
       </div>
     </div>
   </body>
