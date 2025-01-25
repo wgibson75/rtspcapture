@@ -1,16 +1,13 @@
 <html>
   <head>
     <title>HD Playback</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link href="jquery-ui-1-13-2.css" rel="stylesheet">
     <script src="jquery-3.7.1.min.js"></script>
     <script src="jquery-ui-1-13-2.min.js"></script>
     <style>
 
     body {
-      position: relative;
-      overflow: hidden;
-      height: 100%;
       margin: 0;
       background-color: black;
     }
@@ -24,7 +21,6 @@
 
     #fullscreen {
       position: relative;
-      overflow: hidden;
       width: 100%;
       height: 100%;
     }
@@ -272,8 +268,8 @@
       $(`#${CURRENT_PLAY_ID - 1}`).click(); // Play next video when current ends
     });
 
-    resizeVideo();
     initControl();
+    resizeVideo();
     positionControl();
 
     if (MAKE_CONTROL_DRAGGABLE) {
@@ -290,9 +286,13 @@
   });
 
   $(window).bind("resize", function() {
-    positionControl();
     resizeVideo();
+    positionControl();
   });
+
+  function isOrientationLandscape() {
+    return (screen.orientation.type == "landscape-primary");
+  }
 
   function resizeVideo() {
     video.setAttribute("width", window.innerWidth);
