@@ -103,7 +103,11 @@
   const DAYS = ["Mon", "Tue", "Wed", "Thur", "Fri", "Sat", "Sun"];
 
   const MARGIN_CONTROL_TOP_PCT = 5;  // Top margin of control pane as percentage of screen height
-  const HEIGHT_CONTROL_PCT     = 85; // Height of control pane as percentage of screen height 
+  const HEIGHT_CONTROL_PCT     = 85; // Height of control pane as percentage of screen height
+
+  // Percentage height to add to top margin of control and remove from
+  // height of control for iPhone when orientation is portrait
+  const IPHONE_HEIGHT_DELTA_CONTROL_PCT = 35;
 
   const LIVE_PLAY_ID                   = 0;    // ID of live playback stream
   const MAKE_CONTROL_DRAGGABLE         = true; // Flags whether to make control pane draggable on supported devices
@@ -290,8 +294,8 @@
     positionControl();
   });
 
-  function isOrientationLandscape() {
-    return (screen.orientation.type == "landscape-primary");
+  function isIphonePortrait() {
+    return (IS_IPHONE && (screen.orientation.type == "portrait-primary"));
   }
 
   function resizeVideo() {
@@ -338,8 +342,16 @@
   }
 
   function positionControl() {
-    $("#control").css("height", `${HEIGHT_CONTROL_PCT}%`);
-    $("#control").css("top", `${MARGIN_CONTROL_TOP_PCT}%`);
+    let height = isIphonePortrait()
+      ? HEIGHT_CONTROL_PCT - IPHONE_HEIGHT_DELTA_CONTROL_PCT
+      : HEIGHT_CONTROL_PCT;
+
+    let top    = isIphonePortrait()
+      ? MARGIN_CONTROL_TOP_PCT + IPHONE_HEIGHT_DELTA_CONTROL_PCT
+      : MARGIN_CONTROL_TOP_PCT;
+
+    $("#control").css("height", `${height}%`);
+    $("#control").css("top", `${top}%`);
     $("#control").css("left", IS_CONTROL_FLIPPED
       ? (window.innerWidth * 0.05)
       : window.innerWidth - $("#control").width() - (window.innerWidth * 0.05));
@@ -400,7 +412,7 @@
     }
     $(`#${button.id}`).toggleClass("button-highlight");
 
-    pressedButton      = button;
+    pressedButton = button;
     BUTTON_PRESS_TIMEOUT = setTimeout(hideButtonPress, BUTTON_PRESS_HIGHLIGHT_TIME_MS, button);
   }
   
