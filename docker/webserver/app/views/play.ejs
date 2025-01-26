@@ -26,11 +26,12 @@
     }
 
     #video {
+      display: none; /* Only shown once video playback has started */
       font-size: 0pt;
     }
 
     #control {
-      display: flex;
+      display: none; /* Set to "flex" once control pane is populated */
       flex-direction: column;
       position: absolute;
       border-radius: 6px;
@@ -265,7 +266,13 @@
     RECORDINGS = new Recordings(CAPTURE_DIR, CAMERA, RECS_DATA, FIELD_WIDTH);
     PLAYBACK   = new Playback("video");
 
-    document.getElementById("video").addEventListener("ended", e => {
+    let video = document.getElementById("video");
+
+    video.addEventListener("canplay", e => {
+      $("#video").show();
+    });
+
+    video.addEventListener("ended", e => {
       if (CURRENT_PLAY_ID != 1) {
         PLAYBACK.maintainSpeedForNextPlay();
       }
@@ -338,7 +345,10 @@
     }
 
     // Only show button for flipping position on iPhone
-    if (!IS_IPHONE) $('#flip-position').hide();
+    if (!IS_IPHONE) $("#flip-position").hide();
+
+    // Now show the control pane
+    $("#control").css("display", "flex");
   }
 
   function positionControl() {
