@@ -258,9 +258,6 @@
   }
 
   $(document).ready(function () {
-    // Add keypress handler for pausing with spacebar
-    document.addEventListener("keypress", keypressHandler);
-
     // Doesn't work for iPad unfortunately i.e. iPad reported as Mac (clearly a bug!)
     if (/iPhone/.test(navigator.userAgent)) {
       IS_IPHONE = true;
@@ -295,8 +292,31 @@
     $(`#${LIVE_PLAY_ID}`).click(); // Play live by default
   });
 
-  function keypressHandler(e) {
-    if (e.code == 'Space') $("#play-pause").click();
+  $(window).keydown(function(e) {
+    let isHandled = true;
+
+    switch(e.which) {
+      case 32: // Spacebar
+        $("#play-pause").click();
+        break;
+
+      case 37: // Left cursor
+        $("#speed-down").click();
+        break;
+
+      case 39: // Right cursor
+        $("#speed-up").click();
+        break;
+
+      default:
+        isHandled = false;
+    }
+    return !isHandled; // Don't propogate keypress event if handled
+  });
+
+  function keydownHandler(e) {
+    if (e.code == 'ArrowLeft')       $("#speed-down").click();
+    else if (e.code == 'ArrowRight') $("#speed-up").click();
   }
 
   $(window).bind("orientationchange", function() {
