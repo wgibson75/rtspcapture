@@ -258,6 +258,9 @@
   }
 
   $(document).ready(function () {
+    // Add keypress handler for pausing with spacebar
+    document.addEventListener("keypress", keypressHandler);
+
     // Doesn't work for iPad unfortunately i.e. iPad reported as Mac (clearly a bug!)
     if (/iPhone/.test(navigator.userAgent)) {
       IS_IPHONE = true;
@@ -291,6 +294,10 @@
 
     $(`#${LIVE_PLAY_ID}`).click(); // Play live by default
   });
+
+  function keypressHandler(e) {
+    if (e.code == 'Space') $("#play-pause").click();
+  }
 
   $(window).bind("orientationchange", function() {
     positionControl();
