@@ -122,6 +122,9 @@
   var IS_IPHONE            = false; // Flags if running on an iPhone device
   var IS_CONTROL_FLIPPED   = false; // Flags if control position is flipped to other side of screen
 
+  var KEYS_DOWN = {}; // Stores a dictionary of keypresses that are currently occuring
+
+
   class Recordings {
     #recordings      = [];   // Recordings in reverse chronological order (including non playable live first)
     #dayBoundaryIdxs = [];   // List of day boundary indexes i.e. indexes of first recording in each day
@@ -177,6 +180,7 @@
     #SPEEDS           = [0, 0.5, 1, 2, 4, 8, 16]; // Supported playback speeds
     #NORMAL_SPEED_IDX = 2;                        // Index of normal playback speed
     #PAUSED_SPEED_IDX = 0;                        // Index of paused playback speed
+    #SEEK_TIME_SECS   = 60;                       // Seek time in seconds
 
     #video    = null;
     #url      = null;
@@ -248,6 +252,16 @@
       return true;
     }
 
+    seekForward() {
+      // Let player handle if we go forward too far
+      this.#video.currentTime += this.#SEEK_TIME_SECS;
+    }
+
+    seekBackward() {
+      // Let player handle if we go backward too far
+      this.#video.currentTime -= this.#SEEK_TIME_SECS;
+    }
+
     maintainSpeedForNextPlay() {
       this.#sameSpeedForNextPlay = true;
     }
@@ -293,25 +307,52 @@
   });
 
   $(window).keydown(function(e) {
-    let isHandled = true;
+    KEYS_DOWN[e.which]++;
 
-    switch(e.which) {
-      case 32: // Spacebar
-        $("#play-pause").click();
-        break;
-
-      case 37: // Left cursor
-        $("#speed-down").click();
-        break;
-
-      case 39: // Right cursor
-        $("#speed-up").click();
-        break;
-
-      default:
-        isHandled = false;
+    // Multi-keypress
+    if (Object.keys(KEYS_DOWN).length > 1) {
+      console.log(Object.keys(KEYS_DOWN));
+      if ((18 in KEYS_DOWN) && // Option
+          (37 in KEYS_DOWN)) { // Left cursor
+        seekBackward();
+      }
+      else if ((18 in KEYS_DOWN) && // Option
+               (39 in KEYS_DOWN)) { // Right cursor
+        seekForward();
+      }
+      // Clear out all keypresses except for the Option
+      // key to allow Option to be held whilst pressing
+      // Left or Right repeatedly
+      for (x in KEYS_DOWN) {
+        if (x != 18) delete KEYS_DOWN[x];
+      }
     }
-    return !isHandled; // Don't propogate keypress event if handled
+    // Otherwise single keypress
+    else {
+      switch(e.which) {
+        case 32: // Spacebar
+        case 40: // Down cursor
+          $("#play-pause").click();
+          break;
+
+        case 37: // Left cursor
+          $("#speed-down").click();
+          break;
+
+        case 39: // Right cursor
+          $("#speed-up").click();
+          break;
+
+        default:
+          isHandled = false;
+      }
+    }
+    return false; // Never propogate the keypress up
+  });
+
+  $(window).keyup(function(e) {
+    console.log('keyup!');
+    delete KEYS_DOWN[e.which];
   });
 
   function keydownHandler(e) {
@@ -429,6 +470,16 @@
       showButtonPress(button);
       showPlaybackState();
     }
+  }
+
+  function seekForward() {
+    if (CURRENT_PLAY_ID == LIVE_PLAY_ID) return; // Do not support on live
+    PLAYBACK.seekForward();
+  }
+
+  function seekBackward() {
+    if (CURRENT_PLAY_ID == LIVE_PLAY_ID) return; // Do not support on live
+    PLAYBACK.seekBackward();
   }
 
   function flipControlPosition(button) {
