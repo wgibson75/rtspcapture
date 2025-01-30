@@ -100,7 +100,7 @@
   RECS_DATA.push(<%- recordings %>);
   const FIELD_WIDTH = 8; // Number of fields for each recording
 
-  const DAYS = ["Mon", "Tue", "Wed", "Thur", "Fri", "Sat", "Sun"];
+  const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thur", "Fri", "Sat"];
 
   const MARGIN_CONTROL_TOP_PCT = 5;  // Top margin of control pane as percentage of screen height
   const HEIGHT_CONTROL_PCT     = 85; // Height of control pane as percentage of screen height
@@ -310,7 +310,6 @@
 
     // Multi-keypress
     if (Object.keys(KEYS_DOWN).length > 1) {
-      console.log(Object.keys(KEYS_DOWN));
       if ((18 in KEYS_DOWN) && // Option
           (37 in KEYS_DOWN)) { // Left cursor
         seekBackward();
@@ -350,7 +349,6 @@
   });
 
   $(window).keyup(function(e) {
-    console.log('keyup!');
     delete KEYS_DOWN[e.which];
   });
 
