@@ -515,3 +515,26 @@ The default login credentials are:
 Once logged in, you will see the home page that provides access to all features:
 
 ![Home page](images/home_page.jpg)
+
+## Using the Console
+
+When selecting **Console** from the Home page, you will see a mosaic of live video streams from all of your cameras. This uses the low resolution live stream from each camera.
+
+![Home page](images/console.jpg)
+
+Selecting any of these live streams will bring up the high definition video stream for the corresponding camera. This high definition stream includes a draggable OSD pane that will show all of the recordings from the camera grouped by day in reverse chronological order; these are shown in a scrollable list. These recordings can be selected for playback and the buttons at the top of the pane can be used to control playback. The current playback state is always shown in bright green italics below the buttons.
+
+![Home page](images/high-definition-stream.jpg)
+
+On a MacBook (or iPad with keyboard), the following keys can also be used to control playback:
+
+| Key | Function |
+| --- | --- |
+| LEFT cursor | Slows down the playback rate |
+| RIGHT cursor | Speeds up the playback rate |
+| SPACE or DOWN cursor | Toggles play/pause |
+| OPTION + LEFT cursor | Seeks back by 30 seconds |
+| OPTION + RIGHT cursor | Seeks forward by 30 seconds |
+
+In addition to these controls, you can use the standard seek bar shown when selecting the video background to seek to any point in the current recording. When a recording ends, the next recording will automatically play at the current playback rate. Selecting a new recording for playback will always reset the playback rate to x1 speed.
+
