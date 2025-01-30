@@ -42,7 +42,6 @@
       display: flex;
       flex-direction: row;
       justify-content: space-between;
-      border-radius: 6px 6px 0px 0px;
       background-color: rgba(160, 160, 160, 0.5);
     }
 
@@ -180,7 +179,7 @@
     #SPEEDS           = [0, 0.5, 1, 2, 4, 8, 16]; // Supported playback speeds
     #NORMAL_SPEED_IDX = 2;                        // Index of normal playback speed
     #PAUSED_SPEED_IDX = 0;                        // Index of paused playback speed
-    #SEEK_TIME_SECS   = 60;                       // Seek time in seconds
+    #SEEK_TIME_SECS   = 30;                       // Seek time in seconds
 
     #video    = null;
     #url      = null;
@@ -354,11 +353,6 @@
     console.log('keyup!');
     delete KEYS_DOWN[e.which];
   });
-
-  function keydownHandler(e) {
-    if (e.code == 'ArrowLeft')       $("#speed-down").click();
-    else if (e.code == 'ArrowRight') $("#speed-up").click();
-  }
 
   $(window).bind("orientationchange", function() {
     positionControl();
