@@ -16,6 +16,7 @@
      - [Adjustments to the Mains Relay Trigger Sensitivity](#adjustments_to_mains_relay_trigger_sensitivity)
 - [Running the System](#run_system)
 - [Accessing the Running System](#access_system)
+- [Using the Console](#using_the_console)
 
 <a name="intro"></a>
 ## Introduction
@@ -516,6 +517,7 @@ Once logged in, you will see the home page that provides access to all features:
 
 ![Home page](images/home_page.jpg)
 
+<a name="using_the_console"></a>
 ## Using the Console
 
 When selecting **Console** from the Home page, you will see a mosaic of live video streams from all of your cameras. This uses the low resolution live stream from each camera.
