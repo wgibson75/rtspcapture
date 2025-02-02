@@ -38,7 +38,7 @@
       background-color: rgba(128, 128, 128, 0.5);
     }
 
-    #buttons {
+    .button-group {
       display: flex;
       flex-direction: row;
       justify-content: space-between;
@@ -256,7 +256,7 @@
       this.#video.currentTime += this.#SEEK_TIME_SECS;
     }
 
-    seekBackward() {
+    seekBack() {
       // Let player handle if we go backward too far
       this.#video.currentTime -= this.#SEEK_TIME_SECS;
     }
@@ -312,7 +312,7 @@
     if (Object.keys(KEYS_DOWN).length > 1) {
       if ((18 in KEYS_DOWN) && // Option
           (37 in KEYS_DOWN)) { // Left cursor
-        seekBackward();
+        seekBack();
       }
       else if ((18 in KEYS_DOWN) && // Option
                (39 in KEYS_DOWN)) { // Right cursor
@@ -405,7 +405,7 @@
     }
 
     // Only show button for flipping position on iPhone
-    if (!IS_IPHONE) $("#flip-position").hide();
+    if (!IS_IPHONE) $("#bottom-buttons").hide();
 
     // Now show the control pane
     $("#control").css("display", "flex");
@@ -464,17 +464,19 @@
     }
   }
 
-  function seekForward() {
+  function seekForward(button) {
     if (CURRENT_PLAY_ID == LIVE_PLAY_ID) return; // Do not support on live
+    if (button) showButtonPress(button);
     PLAYBACK.seekForward();
   }
 
-  function seekBackward() {
+  function seekBack(button) {
     if (CURRENT_PLAY_ID == LIVE_PLAY_ID) return; // Do not support on live
-    PLAYBACK.seekBackward();
+    if (button) showButtonPress(button);
+    PLAYBACK.seekBack();
   }
 
-  function flipControlPosition(button) {
+  function reposition(button) {
     showButtonPress(button);
     IS_CONTROL_FLIPPED = !IS_CONTROL_FLIPPED;
     positionControl();
@@ -507,14 +509,18 @@
     <div id="fullscreen">
       <video id="video" type="video/mp4" playsinline autoplay muted controls></video>
       <div id="control">
-        <div id="buttons">
+        <div class="button-group">
           <div id="speed-down" class="button" onclick="speedDown(this)">&lt;&lt;</div>
           <div id="play-pause" class="button" onclick="togglePlayPause(this)">Pause</div>
           <div id="speed-up" class="button" onclick="speedUp(this)">&gt;&gt;</div>
         </div>
         <div id="playback-state"></div>
         <div id="entries"></div>
-        <div id="flip-position" class="button" onclick="flipControlPosition(this)">Reposition</div>
+        <div class="button-group" id="bottom-buttons">
+          <div id="seek-back" class="button" onclick="seekBack(this)">|&lt;&lt;</div>
+          <div id="flip-position" class="button" onclick="reposition(this)">Repo</div>
+          <div id="seek-forward" class="button" onclick="seekForward(this)">&gt;&gt;|</div>
+        </div>
       </div>
     </div>
   </body>
