@@ -318,6 +318,10 @@
                (39 in KEYS_DOWN)) { // Right cursor
         seekForward();
       }
+      else if ((93 in KEYS_DOWN) && // Command
+               (37 in KEYS_DOWN)) { // Left cursor
+        history.back();
+      }
       // Clear out all keypresses except for the Option
       // key to allow Option to be held whilst pressing
       // Left or Right repeatedly
