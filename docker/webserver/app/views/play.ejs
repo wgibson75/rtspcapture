@@ -93,12 +93,12 @@
     </style>
   </head>
   <script>
-  const CAPTURE_DIR = "<%= capture_dir %>";
-  const CAMERA      = "<%= camera_name %>";
+  const CAPTURE_DIR   = "<%= capture_dir %>";
+  const CAMERA        = "<%= camera_name %>";
+  const PLAYBACK_TIME = "<%= playback_time %>";
 
   const RECS_DATA = [];
   RECS_DATA.push(<%- recordings %>);
-  const FIELD_WIDTH = 8; // Number of fields for each recording
 
   const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thur", "Fri", "Sat"];
 
@@ -130,11 +130,11 @@
     #captureDir      = null; // Video capture directory
     #camera          = null; // Camera name
 
-    constructor(captureDir, camera, data, fieldWidth) {
+    constructor(captureDir, camera, data) {
       this.#captureDir = captureDir;
       this.#camera     = camera;
 
-      this.#loadRecordings(data, fieldWidth);
+      this.#loadRecordings(data);
     }
 
     getNumRecordings() {
@@ -160,9 +160,34 @@
         : `/${this.#captureDir}/${this.#camera}/${this.#recordings[idx][0]}`;
     }
 
-    #loadRecordings(data, fieldWidth) {
-      for (let fieldIdx = 0, recIdx = 0, currentDay = null; fieldIdx < data.length; fieldIdx += fieldWidth, recIdx++) {
-        let [file, year, month, date, day, hrs, mins, secs] = data.slice(fieldIdx, fieldIdx + fieldWidth);
+    getIdxAndOffsetForTime(t) {
+      t = t * 1000; // Convert time to milliseconds (to match creation time units)
+      for (let i = 0; i < this.#recordings.length; i++) {
+        let [file, crtime, year, month, date, day, hrs, mins, secs] = this.#recordings[i];
+
+        if (t >= crtime) {
+          let offset = Math.round((t - crtime) / 1000); // Position must be in seconds
+          return [i, offset];
+          break;
+        }
+      }
+      return undefined;
+    }
+
+    #loadRecordings(data) {
+      const FIELD_WIDTH = 2; // Number of fields for each recording i.e. filename, creation time
+
+      for (let fieldIdx = 0, recIdx = 0, currentDay = null; fieldIdx < data.length; fieldIdx += FIELD_WIDTH, recIdx++) {
+        let [file, crtime] = data.slice(fieldIdx, fieldIdx + FIELD_WIDTH);
+
+        let dateObj = new Date(crtime);
+        let year    = dateObj.getFullYear();
+        let month   = dateObj.getMonth();
+        let date    = dateObj.getDate();
+        let day     = dateObj.getDay();
+        let hrs     = dateObj.getHours();
+        let mins    = dateObj.getMinutes();
+        let secs    = dateObj.getSeconds();
 
         if (currentDay != day) {
           if (currentDay != null) {
@@ -170,7 +195,7 @@
           }
           currentDay = day;
         }
-        this.#recordings.push([file, year, month, date, day, hrs, mins, secs]);
+        this.#recordings.push([file, crtime, year, month, date, day, hrs, mins, secs]);
       }
     };
   }
@@ -261,6 +286,10 @@
       this.#video.currentTime -= this.#SEEK_TIME_SECS;
     }
 
+    setPosition(position) {
+      this.#video.currentTime = position;
+    }
+
     maintainSpeedForNextPlay() {
       this.#sameSpeedForNextPlay = true;
     }
@@ -276,7 +305,7 @@
       IS_IPHONE = true;
     }
 
-    RECORDINGS = new Recordings(CAPTURE_DIR, CAMERA, RECS_DATA, FIELD_WIDTH);
+    RECORDINGS = new Recordings(CAPTURE_DIR, CAMERA, RECS_DATA);
     PLAYBACK   = new Playback("video");
 
     let video = document.getElementById("video");
@@ -302,8 +331,27 @@
       });
     }
 
-    $(`#${LIVE_PLAY_ID}`).click(); // Play live by default
+    if (!setPlaybackTime()) {
+      $(`#${LIVE_PLAY_ID}`).click(); // Otherwise play live by default
+    }
   });
+
+  // Set any supplied playback time passed into this template
+  function setPlaybackTime() {
+    if (PLAYBACK_TIME.length == 0) return false;
+
+    let playbackTimeSecs = parseInt(PLAYBACK_TIME, 10);
+    let idxAndOffset = RECORDINGS.getIdxAndOffsetForTime(playbackTimeSecs);
+
+    if (idxAndOffset == undefined) return false;
+    let [idx, pos] = idxAndOffset;
+
+    scrollToControlEntry(idx); // Scroll to the recording entry
+    $(`#${idx}`).click();      // Select the entry for playback
+    PLAYBACK.setPosition(pos); // Set the playback position
+
+    return true;
+  }
 
   $(window).keydown(function(e) {
     KEYS_DOWN[e.which]++;
@@ -383,7 +431,7 @@
 
     // Now populate all entries in the control pane showing
     for (let idx = 0; idx < RECORDINGS.getNumRecordings(); idx++) {
-      let [file, year, month, date, day, hrs, mins, secs] = RECORDINGS.getInfo(idx);
+      let [file, crtime, year, month, date, day, hrs, mins, secs] = RECORDINGS.getInfo(idx);
 
       // Format certain time fields
       date  = ("0" + date).slice(-2);
@@ -429,6 +477,13 @@
     $("#control").css("left", IS_CONTROL_FLIPPED
       ? (window.innerWidth * 0.05)
       : window.innerWidth - $("#control").width() - (window.innerWidth * 0.05));
+  }
+
+  function scrollToControlEntry(idx) {
+    panel = $("#entries");
+    entry = $(`#${idx}`);
+
+    panel.scrollTop(entry.offset().top - panel.offset().top + panel.scrollTop());
   }
 
   // Note: recording index and corresponding entry ID in control pane are the same
