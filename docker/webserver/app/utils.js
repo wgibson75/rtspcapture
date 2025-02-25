@@ -94,5 +94,13 @@ module.exports = {
 
     getCameraCaptureDir(cameraName) {
         return path.join(config.get('root_path'), config.get('capture_dir'), cameraName);
+    },
+
+    getQuotedCameraNames() {
+        let cameras = [];
+        config.get('cameras').forEach((camera) => {
+            cameras.push(`'${camera.name}'`); // Camera name (quoted string for EJS)
+        });
+        return cameras;
     }
 };

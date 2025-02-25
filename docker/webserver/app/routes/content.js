@@ -84,16 +84,17 @@ router.get('/play', ensureLoggedIn, function(request, response, next) {
     let recordings = [];
     utils.getFilesSortedByDate(cameraDir, 'mp4').forEach((entry) => {
         recordings.push([
-            `'${entry[0]}'`,     // Recording filename (quoted string for EJS)
-            entry[1].birthtimeMs // Recording creation time EPOC in UTC
+            `'${entry[0]}'`,                        // Recording filename (quoted string for EJS)
+            Math.round(entry[1].birthtimeMs / 1000) // Recording creation time EPOC as UTC in seconds
         ]);
     });
 
     response.render('play', {
-        capture_dir   : config.get('capture_dir'),
-        camera_name   : camera,
-        playback_time : playbackTime,
-        recordings    : recordings
+        capture_dir       : config.get('capture_dir'),
+        camera_name       : camera,
+        camera_names_list : utils.getQuotedCameraNames(),
+        playback_time     : playbackTime,
+        recordings        : recordings
     });
 });
 

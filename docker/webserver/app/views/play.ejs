@@ -13,7 +13,7 @@
     }
 
     hr {
-      width: 30px;
+      width: 25px;
       height: 2px;
       border: 0;
       background-image: linear-gradient(to right, rgba(255, 255, 0, 0), rgba(255, 255, 0, 0.75), rgba(255, 255, 0, 0));
@@ -54,9 +54,10 @@
 
     #playback-state {
       border-radius: 0px 0px 0px 0px;
+      padding: 4px;
+      font-size: small;
       text-align: center;
       font-style: italic;
-      background-color: rgba(160, 160, 160, 0.5);
       color: #8cff66;
     }
 
@@ -66,9 +67,16 @@
       border-color: rgba(64, 64, 64, 0.5);
       border-radius: 6px 6px 6px 6px;
       padding: 4px;
-      text-align: center;
       background-color: rgba(64, 64, 64, 0.5);
+      font-size: small;
+      text-align: center;
       color: #66ff33;
+      width: 20;
+    }
+
+    /* Ensure widths of middle buttons are bigger */
+    #play-pause, #flip-position {
+      width: 40;
     }
 
     .button-highlight {
@@ -94,8 +102,11 @@
   </head>
   <script>
   const CAPTURE_DIR   = "<%= capture_dir %>";
-  const CAMERA        = "<%= camera_name %>";
   const PLAYBACK_TIME = "<%= playback_time %>";
+  const CAMERA        = "<%= camera_name %>";
+
+  const CAMERAS_LIST  = [];
+  CAMERAS_LIST.push(<%- camera_names_list %>);
 
   const RECS_DATA = [];
   RECS_DATA.push(<%- recordings %>);
@@ -161,17 +172,23 @@
     }
 
     getIdxAndOffsetForTime(t) {
-      t = t * 1000; // Convert time to milliseconds (to match creation time units)
       for (let i = 0; i < this.#recordings.length; i++) {
         let [file, crtime, year, month, date, day, hrs, mins, secs] = this.#recordings[i];
 
         if (t >= crtime) {
-          let offset = Math.round((t - crtime) / 1000); // Position must be in seconds
+          let offset = t - crtime; // Position must be in seconds
           return [i, offset];
           break;
         }
       }
       return undefined;
+    }
+
+    getStartTimeEpochSecs(idx) {
+      if ((idx < 0) || (idx >= this.#recordings.length)) return;
+
+      let [file, crtime, year, month, date, day, hrs, mins, secs] = this.#recordings[idx];
+      return crtime;
     }
 
     #loadRecordings(data) {
@@ -180,14 +197,14 @@
       for (let fieldIdx = 0, recIdx = 0, currentDay = null; fieldIdx < data.length; fieldIdx += FIELD_WIDTH, recIdx++) {
         let [file, crtime] = data.slice(fieldIdx, fieldIdx + FIELD_WIDTH);
 
-        let dateObj = new Date(crtime);
-        let year    = dateObj.getFullYear();
-        let month   = dateObj.getMonth();
-        let date    = dateObj.getDate();
-        let day     = dateObj.getDay();
-        let hrs     = dateObj.getHours();
-        let mins    = dateObj.getMinutes();
-        let secs    = dateObj.getSeconds();
+        let dateObj = new Date(crtime * 1000);
+        let year  = dateObj.getFullYear();
+        let month = dateObj.getMonth();
+        let date  = dateObj.getDate();
+        let day   = dateObj.getDay();
+        let hrs   = dateObj.getHours();
+        let mins  = dateObj.getMinutes();
+        let secs  = dateObj.getSeconds();
 
         if (currentDay != day) {
           if (currentDay != null) {
@@ -288,6 +305,10 @@
 
     setPosition(position) {
       this.#video.currentTime = position;
+    }
+
+    getPosition() {
+      return this.#video.currentTime;
     }
 
     maintainSpeedForNextPlay() {
@@ -541,6 +562,38 @@
     positionControl();
   }
 
+  function getPlayUrl(camera, time) {
+    return `/play?c=${camera}&t=${time}`;
+  }
+
+  function getPlaybackTime() {
+    if (CURRENT_PLAY_ID == LIVE_PLAY_ID) return 0;
+
+    let startTime = RECORDINGS.getStartTimeEpochSecs(CURRENT_PLAY_ID)
+    if (startTime == undefined) return 0;
+
+    let playbackPos = Math.round(PLAYBACK.getPosition());
+    if (playbackPos == undefined) return 0;
+
+    return startTime + playbackPos;
+  }
+
+  function prevCam(button) {
+    let camIdx = CAMERAS_LIST.indexOf(CAMERA);
+    if (camIdx == 0) return;
+
+    showButtonPress(button);
+    top.document.location.replace(getPlayUrl(CAMERAS_LIST[--camIdx], getPlaybackTime()));
+  }
+
+  function nextCam(button) {
+    let camIdx = CAMERAS_LIST.indexOf(CAMERA);
+    if (camIdx == (CAMERAS_LIST.length - 1)) return;
+
+    showButtonPress(button);
+    top.document.location.replace(getPlayUrl(CAMERAS_LIST[++camIdx], getPlaybackTime()));
+  }
+
   function showPlaybackState() {
     $("#play-pause").html(PLAYBACK.isPaused() ? "Play" : "Pause");
     $("#playback-state").html(PLAYBACK.getStatusString());
@@ -573,7 +626,11 @@
           <div id="play-pause" class="button" onclick="togglePlayPause(this)">Pause</div>
           <div id="speed-up" class="button" onclick="speedUp(this)">&gt;&gt;</div>
         </div>
-        <div id="playback-state"></div>
+        <div class="button-group">
+          <div id="prev-cam" class="button" onclick="prevCam(this)">Prv</div>
+          <div id="playback-state"></div>
+          <div id="next_cam" class="button" onclick="nextCam(this)">Nxt</div>
+        </div>
         <div id="entries"></div>
         <div class="button-group" id="bottom-buttons">
           <div id="seek-back" class="button" onclick="seekBack(this)">|&lt;&lt;</div>
