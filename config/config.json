@@ -41,6 +41,25 @@
             ]
         },
         {
+            "name"     : "footpath",
+            "username" : "admin",
+            "password" : "",
+            "ip"       : "192.168.0.127",
+            "port"     : 554,
+            "streams"  : [
+                {
+                    "name"                    : "high_res",
+                    "width"                   : 1920,
+                    "height"                  : 1080,
+                    "path"                    : "/Streaming/Channels/1",
+                    "vtag"                    : "hvc1",
+                    "include_audio"           : true,
+                    "live_audio_advance_secs" : 3.0
+                },
+                { "name" : "low_res",  "width" : 640,  "height" : 360,  "path" : "/Streaming/Channels/2", "vtag" : "hvc1" }
+            ]
+        },
+        {
             "name"     : "front_of_house",
             "username" : "admin",
             "password" : "",
@@ -71,21 +90,24 @@
             ]
         },
         {
-            "name"     : "footpath",
+            "name"     : "back_of_house",
             "username" : "admin",
             "password" : "",
-            "ip"       : "192.168.0.127",
+            "ip"       : "192.168.0.108",
             "port"     : 554,
             "streams"  : [
-                {
-                    "name"                    : "high_res",
-                    "width"                   : 1920,
-                    "height"                  : 1080,
-                    "path"                    : "/Streaming/Channels/1",
-                    "vtag"                    : "hvc1",
-                    "include_audio"           : true,
-                    "live_audio_advance_secs" : 3.0
-                },
+                { "name" : "high_res", "width" : 1920, "height" : 1080, "path" : "/Streaming/Channels/1" },
+                { "name" : "low_res",  "width" : 640,  "height" : 360,  "path" : "/Streaming/Channels/2" }
+            ]
+        },
+        {
+            "name"     : "side_of_potting_shed",
+            "username" : "admin",
+            "password" : "",
+            "ip"       : "192.168.0.123",
+            "port"     : 554,
+            "streams"  : [
+                { "name" : "high_res", "width" : 1920, "height" : 1080, "path" : "/Streaming/Channels/1", "vtag" : "hvc1" },
                 { "name" : "low_res",  "width" : 640,  "height" : 360,  "path" : "/Streaming/Channels/2", "vtag" : "hvc1" }
             ]
         },
@@ -109,28 +131,6 @@
             "streams"  : [
                 { "name" : "high_res", "width" : 1920, "height" : 1080, "path" : "/11" },
                 { "name" : "low_res",  "width" : 640,  "height" : 360,  "path" : "/22", "aspect" : "640:360" }
-            ]
-        },
-        {
-            "name"     : "back_of_house",
-            "username" : "admin",
-            "password" : "",
-            "ip"       : "192.168.0.108",
-            "port"     : 554,
-            "streams"  : [
-                { "name" : "high_res", "width" : 1920, "height" : 1080, "path" : "/Streaming/Channels/1" },
-                { "name" : "low_res",  "width" : 640,  "height" : 360,  "path" : "/Streaming/Channels/2" }
-            ]
-        },
-        {
-            "name"     : "side_of_potting_shed",
-            "username" : "admin",
-            "password" : "",
-            "ip"       : "192.168.0.123",
-            "port"     : 554,
-            "streams"  : [
-                { "name" : "high_res", "width" : 1920, "height" : 1080, "path" : "/Streaming/Channels/1", "vtag" : "hvc1" },
-                { "name" : "low_res",  "width" : 640,  "height" : 360,  "path" : "/Streaming/Channels/2", "vtag" : "hvc1" }
             ]
         },
         {
