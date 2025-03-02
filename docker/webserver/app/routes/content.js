@@ -78,24 +78,34 @@ router.get('/play', ensureLoggedIn, function(request, response, next) {
 
     if (!utils.isCameraNameValid(camera)) return response.sendStatus(404);
 
-    let cameraDir  = utils.getCameraCaptureDir(camera);
-
-    // Build list of all recordings with creation date pulled apart into separate fields
-    let recordings = [];
-    utils.getFilesSortedByDate(cameraDir, 'mp4').forEach((entry) => {
-        recordings.push([
-            `'${entry[0]}'`,                        // Recording filename (quoted string for EJS)
-            Math.round(entry[1].birthtimeMs / 1000) // Recording creation time EPOC as UTC in seconds
-        ]);
-    });
-
     response.render('play', {
         capture_dir       : config.get('capture_dir'),
         camera_name       : camera,
         camera_names_list : utils.getQuotedCameraNames(),
-        playback_time     : playbackTime,
-        recordings        : recordings
+        playback_time     : playbackTime
     });
+});
+
+router.get('/recordings', ensureLoggedIn, function(request, response, next) {
+    let camera = request.query.c;
+
+    if (!utils.isCameraNameValid(camera)) return response.sendStatus(404);
+
+    let cameraDir  = utils.getCameraCaptureDir(camera);
+    let recordings = [];
+
+    utils.getFilesSortedByDate(cameraDir, 'mp4').forEach((entry) => {
+        recordings.push([
+            entry[0],                               // Recording filename
+            Math.round(entry[1].birthtimeMs / 1000) // Recording creation time EPOC as UTC in seconds
+        ]);
+    });
+
+    let data = {};
+    data["recordings"] = recordings;
+
+    response.setHeader('Content-Type', 'application/json');
+    response.end(JSON.stringify(data));
 });
 
 router.get(/^.*$/, ensureLoggedIn, function(request, response, next) {

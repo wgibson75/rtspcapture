@@ -56,7 +56,6 @@
       border-radius: 0px 0px 0px 0px;
       padding: 4px;
       font-size: small;
-      font-weight: bold;
       text-align: center;
       vertical-align: middle
       font-style: italic;
@@ -110,44 +109,83 @@
   const CAMERAS_LIST  = [];
   CAMERAS_LIST.push(<%- camera_names_list %>);
 
-  const RECS_DATA = [];
-  RECS_DATA.push(<%- recordings %>);
-
   const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thur", "Fri", "Sat"];
 
   const MARGIN_CONTROL_TOP_PCT = 5;  // Top margin of control pane as percentage of screen height
   const HEIGHT_CONTROL_PCT     = 85; // Height of control pane as percentage of screen height
+
+  // Doesn't work for iPad unfortunately i.e. iPad reported as Mac (clearly a bug!)
+  const IS_IPHONE = (/iPhone/.test(navigator.userAgent)) ? true : false;
 
   // Percentage height to add to top margin of control and remove from
   // height of control for iPhone when orientation is portrait
   const IPHONE_HEIGHT_DELTA_CONTROL_PCT = 35;
 
   const LIVE_PLAY_ID                   = 0;    // ID of live playback stream
-  const MAKE_CONTROL_DRAGGABLE         = true; // Flags whether to make control pane draggable on supported devices
   const BUTTON_PRESS_HIGHLIGHT_TIME_MS = 500;  // Duration of button highlight when pressed
+
+  var RECS_DATA = null;
 
   var RECORDINGS = null; // Set to Recordings object to manage recordings data
   var PLAYBACK   = null; // Set to Playback object to control playback
 
   var CURRENT_PLAY_ID      = null;  // ID of currently playing recording i.e. recording index
   var BUTTON_PRESS_TIMEOUT = null;  // Timeout object for button press highlight
-  var IS_IPHONE            = false; // Flags if running on an iPhone device
   var IS_CONTROL_FLIPPED   = false; // Flags if control position is flipped to other side of screen
 
   var KEYS_DOWN = {}; // Stores a dictionary of keypresses that are currently occuring
 
 
+  ////
+  // Classes
+  ////////
+
   class Recordings {
+    #camera          = null; // Camera name
+    #loadedCb        = null; // Callback to notify when recordings are loaded
     #recordings      = [];   // Recordings in reverse chronological order (including non playable live first)
     #dayBoundaryIdxs = [];   // List of day boundary indexes i.e. indexes of first recording in each day
-    #captureDir      = null; // Video capture directory
-    #camera          = null; // Camera name
 
-    constructor(captureDir, camera, data) {
-      this.#captureDir = captureDir;
-      this.#camera     = camera;
+    constructor(camera, loadedCb) {
+      this.setCamera(camera);
+      this.#loadedCb = loadedCb;
+    }
 
-      this.#loadRecordings(data);
+    #loadRecordings() {
+      fetch(`/recordings?c=${this.#camera}`)
+        .then((response) => {
+          if (response.ok) return response.json();
+        })
+        .then((json) => {
+          if (!json) return;
+
+          for (let i = 0, currentDay = null; i < json.recordings.length; i++) {
+            let [file, crtime] = json.recordings[i];
+
+            let dateObj = new Date(crtime * 1000);
+            let year  = dateObj.getFullYear();
+            let month = dateObj.getMonth();
+            let date  = dateObj.getDate();
+            let day   = dateObj.getDay();
+            let hrs   = dateObj.getHours();
+            let mins  = dateObj.getMinutes();
+            let secs  = dateObj.getSeconds();
+
+            if (currentDay != day) {
+              if (currentDay != null) {
+                this.#dayBoundaryIdxs.push(i);
+              }
+              currentDay = day;
+            }
+            this.#recordings.push([file, crtime, year, month, date, day, hrs, mins, secs]);
+          }
+          this.#loadedCb();
+        });
+    }
+
+    setCamera(camera) {
+      this.#camera = camera;
+      this.#loadRecordings();
     }
 
     getNumRecordings() {
@@ -158,10 +196,10 @@
       return this.#dayBoundaryIdxs;
     }
 
-    getInfo(idx) {
+    getDateFields(idx) {
       if ((idx < 0) || (idx >= this.#recordings.length)) return;
 
-      return this.#recordings[idx];
+      return this.#recordings[idx].slice(2); // Return only date related fields
     }
 
     getPlayUrl(idx) {
@@ -169,8 +207,8 @@
 
       // Return the live stream URL for first recording or playback URL otherwise
       return (idx == LIVE_PLAY_ID)
-        ? `/${this.#captureDir}/${this.#camera}/high_res/live.m3u8`
-        : `/${this.#captureDir}/${this.#camera}/${this.#recordings[idx][0]}`;
+        ? `/${CAPTURE_DIR}/${this.#camera}/high_res/live.m3u8`
+        : `/${CAPTURE_DIR}/${this.#camera}/${this.#recordings[idx][0]}`;
     }
 
     getIdxAndOffsetForTime(t) {
@@ -192,31 +230,83 @@
       let [file, crtime, year, month, date, day, hrs, mins, secs] = this.#recordings[idx];
       return crtime;
     }
+  }
 
-    #loadRecordings(data) {
-      const FIELD_WIDTH = 2; // Number of fields for each recording i.e. filename, creation time
+  class Control {
+    #recordings      = null;
+    #playback        = null;
 
-      for (let fieldIdx = 0, recIdx = 0, currentDay = null; fieldIdx < data.length; fieldIdx += FIELD_WIDTH, recIdx++) {
-        let [file, crtime] = data.slice(fieldIdx, fieldIdx + FIELD_WIDTH);
+    #controlId       = null;
+    #entriesId       = null;
+    #iPhoneButtonsId = null;
 
-        let dateObj = new Date(crtime * 1000);
-        let year  = dateObj.getFullYear();
-        let month = dateObj.getMonth();
-        let date  = dateObj.getDate();
-        let day   = dateObj.getDay();
-        let hrs   = dateObj.getHours();
-        let mins  = dateObj.getMinutes();
-        let secs  = dateObj.getSeconds();
+    #currentPlayId   = null;
 
-        if (currentDay != day) {
-          if (currentDay != null) {
-            this.#dayBoundaryIdxs.push(recIdx);
-          }
-          currentDay = day;
-        }
-        this.#recordings.push([file, crtime, year, month, date, day, hrs, mins, secs]);
+    constructor(recordingsObj, playbackObj, controlId, entriesId, iPhoneButtonsId) {
+      this.#recordings      = recordingsObj;
+      this.#controlId       = controlId;
+      this.#entriesId       = entriesId;
+      this.#iPhoneButtonsId = iPhoneButtonsId;
+    }
+
+    populate() {
+      // Clear the control first
+      $(`#${this.#entriesId}`).empty(); 
+
+      // Build lookup table for indexes of recordings on day boundary
+      let dayRecIdxLookup = {};
+      let dayRecIdxs = this.#recordings.getDayBoundaryIndexes();
+      for (let i = 0; i < dayRecIdxs.length; i++) {
+        dayRecIdxLookup[dayRecIdxs[i]]++;
       }
-    };
+
+      // Now populate all entries in the control pane showing
+      for (let idx = 0; idx < this.#recordings.getNumRecordings(); idx++) {
+        let [year, month, date, day, hrs, mins, secs] = this.#recordings.getDateFields(idx);
+
+        // Format certain time fields
+        date  = ("0" + date).slice(-2);
+        month = ("0" + (month + 1)).slice(-2);
+        hrs   = ("0" + hrs).slice(-2);
+        mins  = ("0" + mins).slice(-2);
+        secs  = ("0" + secs).slice(-2);
+
+        // Show day boundary
+        if (idx in dayRecIdxLookup) {
+          let text = `${DAYS[day]} ${date}-${month}-${year}`;
+          $(`#${this.#entriesId}`).append(`<div class="entry-day-boundary">${text}</div>`);
+        }
+
+        let text = (idx== LIVE_PLAY_ID) ? "Live" : `${hrs}:${mins}:${secs}`; // First entry is live
+
+        // Use the recording index as the entry ID
+        $(`#${this.#entriesId}`).append(
+          `<div class="entry-playback" id="${idx}" onclick="play(${idx})">` +
+          `  <div><hr></div><div style="flex-grow: 1">${text}</div><div><hr></div>` +
+          "</div>"
+        );
+      }
+
+      // Only show button for flipping position on iPhone
+      if (!IS_IPHONE) $(`#${this.#iPhoneButtonsId}`).hide();
+
+      // Now show the control pane
+      $(`#${this.#controlId}`).css("display", "flex");
+    }
+
+    // Note: recording index and corresponding entry ID in control pane are the same
+    play(idx) {
+      //PLAYBACK.play(RECORDINGS.getPlayUrl(idx));
+
+      // Handle selection highlight
+      //if ((CURRENT_PLAY_ID != null) && (CURRENT_PLAY_ID != idx)) {
+      //  $("#" + CURRENT_PLAY_ID).removeClass("entry-playback-selected");
+      //}
+      //$("#" + idx).addClass("entry-playback-selected");
+      //CURRENT_PLAY_ID = idx;
+
+      //showPlaybackState();
+    }
   }
 
   class Playback {
@@ -225,15 +315,32 @@
     #PAUSED_SPEED_IDX = 0;                        // Index of paused playback speed
     #SEEK_TIME_SECS   = 30;                       // Seek time in seconds
 
-    #video    = null;
-    #url      = null;
-    #speedIdx = null;
-    #isPaused = null;
+    #video      = null;
+    #recordings = null;
+    #url        = null;
+    #speedIdx   = null;
+    #isPaused   = null;
 
     #sameSpeedForNextPlay = false;
 
-    constructor(videoElementId) {
-      this.#video = document.getElementById(videoElementId);
+    constructor(videoElementId, recordingsObj) {
+      this.#video      = document.getElementById(videoElementId);
+      this.#recordings = recordingsObj;
+
+      this.#video.addEventListener("canplay", e => {
+        $("#video").show();
+      });
+
+      this.#video.addEventListener("ended", e => {
+        if (CURRENT_PLAY_ID != 1) {
+          this.#maintainSpeedForNextPlay();
+        }
+        $(`#${CURRENT_PLAY_ID - 1}`).click(); // Play next video when current ends
+      });
+    }
+
+    #maintainSpeedForNextPlay() {
+      this.#sameSpeedForNextPlay = true;
     }
 
     play(url) {
@@ -313,67 +420,63 @@
       return this.#video.currentTime;
     }
 
-    maintainSpeedForNextPlay() {
-      this.#sameSpeedForNextPlay = true;
-    }
-
     getStatusString() {
       return (this.#isPaused) ? "Paused" : `x${this.#SPEEDS[this.#speedIdx]}`;
     }
   }
 
-  $(document).ready(function () {
-    // Doesn't work for iPad unfortunately i.e. iPad reported as Mac (clearly a bug!)
-    if (/iPhone/.test(navigator.userAgent)) {
-      IS_IPHONE = true;
-    }
 
-    RECORDINGS = new Recordings(CAPTURE_DIR, CAMERA, RECS_DATA);
-    PLAYBACK   = new Playback("video");
+  function getPlayUrl(camera, time) {
+    return `/play?c=${camera}&t=${time}`;
+  }
 
-    let video = document.getElementById("video");
+  function getRecordingsUrl(camera) {
+    return `/recordings?c=${camera}`;
+  }
 
-    video.addEventListener("canplay", e => {
-      $("#video").show();
-    });
-
-    video.addEventListener("ended", e => {
-      if (CURRENT_PLAY_ID != 1) {
-        PLAYBACK.maintainSpeedForNextPlay();
-      }
-      $(`#${CURRENT_PLAY_ID - 1}`).click(); // Play next video when current ends
-    });
-
-    initControl();
-    resizeVideo();
+  function loadedRecordingsCb() {
+    CONTROL.populate();
     positionControl();
+    setupPlayback();
+  }
 
-    if (MAKE_CONTROL_DRAGGABLE) {
-      $(function() {
-        $("#control").draggable();
-      });
-    }
+  $(document).ready(function () {
+    // Make the control draggable on supported devices
+    $(function() {
+      $("#control").draggable();
+    });
+
+    RECORDINGS = new Recordings(CAMERA, loadedRecordingsCb);
+    PLAYBACK   = new Playback("video", RECORDINGS);
+    CONTROL    = new Control(RECORDINGS, PLAYBACK, "control", "entries", "bottom-buttons");
+  });
+
+  function setupPlayback() {
+    //PLAYBACK = new Playback("video", RECORDINGS);
 
     if (!setPlaybackTime()) {
       $(`#${LIVE_PLAY_ID}`).click(); // Otherwise play live by default
     }
-  });
+
+    resizeVideo();
+  }
 
   // Set any supplied playback time passed into this template
   function setPlaybackTime() {
     if (PLAYBACK_TIME.length == 0) return false;
 
-    let playbackTimeSecs = parseInt(PLAYBACK_TIME, 10);
-    let idxAndOffset = RECORDINGS.getIdxAndOffsetForTime(playbackTimeSecs);
+    //let playbackTimeSecs = parseInt(PLAYBACK_TIME, 10);
+    //let idxAndOffset = RECORDINGS.getIdxAndOffsetForTime(playbackTimeSecs);
 
-    if (idxAndOffset == undefined) return false;
-    let [idx, pos] = idxAndOffset;
+    //if (idxAndOffset == undefined) return false;
+    //let [idx, pos] = idxAndOffset;
 
-    scrollToControlEntry(idx); // Scroll to the recording entry
-    $(`#${idx}`).click();      // Select the entry for playback
-    PLAYBACK.setPosition(pos); // Set the playback position
+    //scrollToControlEntry(idx); // Scroll to the recording entry
+    //$(`#${idx}`).click();      // Select the entry for playback
+    //PLAYBACK.setPosition(pos); // Set the playback position
 
-    return true;
+    //return true;
+    return false;
   }
 
   $(window).keydown(function(e) {
@@ -444,7 +547,7 @@
     video.setAttribute("width", window.innerWidth);
   }
 
-  function initControl() {
+  function populateControl() {
     // Build lookup table for indexes of recordings on day boundary
     let dayRecIdxLookup = {};
     let dayRecIdxs = RECORDINGS.getDayBoundaryIndexes();
@@ -454,7 +557,7 @@
 
     // Now populate all entries in the control pane showing
     for (let idx = 0; idx < RECORDINGS.getNumRecordings(); idx++) {
-      let [file, crtime, year, month, date, day, hrs, mins, secs] = RECORDINGS.getInfo(idx);
+      let [year, month, date, day, hrs, mins, secs] = RECORDINGS.getDateFields(idx);
 
       // Format certain time fields
       date  = ("0" + date).slice(-2);
@@ -564,10 +667,6 @@
     positionControl();
   }
 
-  function getPlayUrl(camera, time) {
-    return `/play?c=${camera}&t=${time}`;
-  }
-
   function getPlaybackTime() {
     if (CURRENT_PLAY_ID == LIVE_PLAY_ID) return 0;
 
@@ -580,12 +679,18 @@
     return startTime + playbackPos;
   }
 
+  function setCamera(camera) {
+    CAMERA = camera;
+    getPlayUrl(CAMERA);
+    getPlaybackTime();
+  }
+
   function prevCam(button) {
     let camIdx = CAMERAS_LIST.indexOf(CAMERA);
     if (camIdx == 0) return;
 
     showButtonPress(button);
-    top.document.location.replace(getPlayUrl(CAMERAS_LIST[--camIdx], getPlaybackTime()));
+    setCamera(CAMERAS_LIST[--camIdx]);
   }
 
   function nextCam(button) {
