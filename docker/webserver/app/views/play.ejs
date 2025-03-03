@@ -242,6 +242,11 @@
       return true;
     }
 
+    resetSpeed() {
+      this.#speedIdx = this.#NORMAL_SPEED_IDX;
+      this.#video.playbackRate = this.#SPEEDS[this.#speedIdx];
+    }
+
     seekForward() {
       // Let player handle if we go forward too far
       this.#video.currentTime += this.#SEEK_TIME_SECS;
@@ -313,7 +318,9 @@
         this.#nextPlaybackTime = null;
       }
       else {
+        // Trigger live stream playback with normal speed
         $(`#${this.#LIVE_PLAY_ID}`).click();
+        this.#playback.resetSpeed();
       }
     }
 
@@ -404,6 +411,9 @@
       let url = this.#recordings.getPlayUrl(idx);
       this.#playback.play(url);
 
+      // Set normal playback speed for live streaming
+      if (idx == this.#LIVE_PLAY_ID) this.#playback.resetSpeed();
+
       // Handle selection highlight
       if ((this.#currentPlayId != null) && (this.#currentPlayId != idx)) {
         $(`#${this.#currentPlayId}`).removeClass("entry-playback-selected");
@@ -457,16 +467,16 @@
       this.#nextPlaybackTime = this.#getCurrentPlaybackTime();
     }
 
-    seekForward(button) {
-      if (this.#currentPlayId == this.#LIVE_PLAY_ID) return; // Do not support on live
-      if (button) showButtonPress(button);
-      this.#playback.seekForward();
-    }
-
     seekBack(button) {
       if (this.#currentPlayId == this.#LIVE_PLAY_ID) return; // Do not support on live
       if (button) this.#showButtonPress(button);
       this.#playback.seekBack();
+    }
+
+    seekForward(button) {
+      if (this.#currentPlayId == this.#LIVE_PLAY_ID) return; // Do not support on live
+      if (button) this.#showButtonPress(button);
+      this.#playback.seekForward();
     }
 
     reposition(button) {
