@@ -143,7 +143,7 @@ function handleContent_dirListing(request, response, filePath) {
     let files = getFiles(filePath);
 
     response.write('<html><head>');
-    response.write('<link rel="stylesheet" href="/server.css">');
+    response.write('<link rel="stylesheet" href="/css/server.css">');
     response.write('</head><body><p>');
 
     let parentUrl = getParentUrl(request.url);
