@@ -263,14 +263,14 @@ class Control {
 
     #isFlipped = false; // Only used for iPhone to flip positioning of control
 
-    constructor(recsObj, playObj, controlId, entriesId, playPauseId, playStateId, iPhoneButtonsId, repositionCb) {
+    constructor(recsObj, playObj, elementIds, repositionCb) {
         this.#recordings      = recsObj;
         this.#playback        = playObj;
-        this.#controlId       = controlId;
-        this.#entriesId       = entriesId;
-        this.#playPauseId     = playPauseId;
-        this.#playbackStateId = playStateId;
-        this.#iPhoneButtonsId = iPhoneButtonsId;
+        this.#controlId       = elementIds["controlId"];
+        this.#entriesId       = elementIds["entriesId"];
+        this.#playPauseId     = elementIds["playPauseButtonId"];
+        this.#playbackStateId = elementIds["playbackStateId"];
+        this.#iPhoneButtonsId = elementIds["iphoneButtonsId"];
         this.#repositionCb    = repositionCb;
 
         this.#recordings.setLoadedCb(this.#recordingsLoadedCb.bind(this));

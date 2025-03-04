@@ -41,7 +41,17 @@
 
     RECORDINGS = new Recordings(CAMERA, CAMERA_LIST, CAPTURE_DIR);
     PLAYBACK   = new Playback("video");
-    CONTROL    = new Control(RECORDINGS, PLAYBACK, "control", "entries", "play-pause", "play-state", "iphone-buttons", positionControl);
+
+    // Setup IDs for all control elements
+    let controlElements = {
+      controlId         : "control",
+      entriesId         : "entries",
+      playPauseButtonId : "play-pause",
+      playbackStateId   : "play-state",
+      iphoneButtonsId   : "iphone-buttons"
+    };
+
+    CONTROL = new Control(RECORDINGS, PLAYBACK, controlElements, positionControl);
 
     positionControl(false, false, CONTROL.isFlipped());
     PLAYBACK.setControl(CONTROL);
