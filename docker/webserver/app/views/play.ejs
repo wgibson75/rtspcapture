@@ -28,7 +28,7 @@
 
   var RECORDINGS = null; // Set to Recordings object to manage recordings data
   var PLAYBACK   = null; // Set to Playback object to control video playback operations
-  var CONTROL   = null;  // Set to Control object to render control panel for controlling playback
+  var CONTROL    = null; // Set to Control object to render control panel for controlling playback
 
   var KEYS_DOWN = {}; // Stores a dictionary of keypresses that are currently occuring
 
@@ -85,31 +85,30 @@
 
     // Multi-keypress
     if (Object.keys(KEYS_DOWN).length > 1) {
-      if ((18 in KEYS_DOWN) && // Option
-          (37 in KEYS_DOWN)) { // Left cursor
-        CONTROL.seekBack();
+      if ((18 in KEYS_DOWN) &&      // Option
+          (37 in KEYS_DOWN)) {      // Left cursor
+        seekBack();
       }
       else if ((18 in KEYS_DOWN) && // Option
                (39 in KEYS_DOWN)) { // Right cursor
-        CONTROL.seekForward();
+        seekForward();
       }
       else if ((16 in KEYS_DOWN) && // Shift
                (37 in KEYS_DOWN)) { // Left cursor
-        CONTROL.prevCam();
+        prevCam();
       }
       else if ((16 in KEYS_DOWN) && // Shift
                (39 in KEYS_DOWN)) { // Right cursor
-        CONTROL.nextCam();
+        nextCam();
       }
       else if ((93 in KEYS_DOWN) && // Command
                (37 in KEYS_DOWN)) { // Left cursor
         history.back();
       }
-      // Clear out all keypresses except for the Option
-      // key to allow Option to be held whilst pressing
-      // Left or Right repeatedly
+      // Clear out all keypresses except for Shift and Option keys to allow
+      // Shift or Option to be held whilst pressing Left or Right repeatedly
       for (x in KEYS_DOWN) {
-        if (x != 18) delete KEYS_DOWN[x];
+        if ((x != 16) && (x != 18)) delete KEYS_DOWN[x];
       }
     }
     // Otherwise single keypress
@@ -148,26 +147,39 @@
     positionControl(true, false, CONTROL.isFlipped());
   });
 
+
+  ////
+  // Button click handlers
+  ////////
+  function speedDown(button)       { CONTROL.speedDown(button);       }
+  function togglePlayPause(button) { CONTROL.togglePlayPause(button); }
+  function speedUp(button)         { CONTROL.speedUp(button);         }
+  function prevCam(button)         { CONTROL.prevCam(button);         }
+  function nextCam(button)         { CONTROL.nextCam(button);         }
+  function seekBack(button)        { CONTROL.seekBack(button);        }
+  function reposition(button)      { CONTROL.reposition(button);      }
+  function seekForward(button)     { CONTROL.seekForward(button);     }
+
   </script>
   <body>
     <div id="fullscreen">
       <video id="video" type="video/mp4" playsinline autoplay muted controls></video>
       <div id="control">
         <div class="button-group">
-          <div id="speed-down" class="button" onclick="CONTROL.speedDown(this)">&lt;&lt;</div>
-          <div id="play-pause" class="button" onclick="CONTROL.togglePlayPause(this)">Pause</div>
-          <div id="speed-up" class="button" onclick="CONTROL.speedUp(this)">&gt;&gt;</div>
+          <div id="speed-down" class="button" onclick="speedDown(this)">&lt;&lt;</div>
+          <div id="play-pause" class="button" onclick="togglePlayPause(this)">Pause</div>
+          <div id="speed-up" class="button" onclick="speedUp(this)">&gt;&gt;</div>
         </div>
         <div class="button-group">
-          <div id="prev-cam" class="button" onclick="CONTROL.prevCam(this)">Prv</div>
+          <div id="prev-cam" class="button" onclick="prevCam(this)">Prv</div>
           <div id="play-state"></div>
-          <div id="next_cam" class="button" onclick="CONTROL.nextCam(this)">Nxt</div>
+          <div id="next_cam" class="button" onclick="nextCam(this)">Nxt</div>
         </div>
         <div id="entries"></div>
         <div class="button-group" id="iphone-buttons">
-          <div id="seek-back" class="button" onclick="CONTROL.seekBack(this)">|&lt;&lt;</div>
-          <div id="flip-position" class="button" onclick="CONTROL.reposition(this)">Repo</div>
-          <div id="seek-forward" class="button" onclick="CONTROL.seekForward(this)">&gt;&gt;|</div>
+          <div id="seek-back" class="button" onclick="seekBack(this)">|&lt;&lt;</div>
+          <div id="flip-position" class="button" onclick="reposition(this)">Repo</div>
+          <div id="seek-forward" class="button" onclick="seekForward(this)">&gt;&gt;|</div>
         </div>
       </div>
     </div>
