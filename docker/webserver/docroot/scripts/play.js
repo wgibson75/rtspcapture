@@ -1,4 +1,246 @@
-// Used by the play template
+// Used by the play EJS template
+
+class Playback {
+    #SPEEDS           = [0, 0.5, 1, 2, 4, 8, 16]; // Supported playback speeds
+    #NORMAL_SPEED_IDX = 2;                        // Index of normal playback speed
+    #PAUSED_SPEED_IDX = 0;                        // Index of paused playback speed
+    #SEEK_TIME_SECS   = 30;                       // Seek time in seconds
+
+    #video      = null;
+    #control    = null;
+    #url        = null;
+    #speedIdx   = this.#NORMAL_SPEED_IDX;
+    #isPaused   = null;
+
+    #sameSpeedForNextPlay = false;
+
+    constructor(videoElementId) {
+        this.#video = document.getElementById(videoElementId);
+
+        this.#video.addEventListener("canplay", e => {
+            $("#video").show();
+        });
+
+        this.#video.addEventListener("ended", e => {
+            if (this.#control != null) {
+                let currentPlayIdx = this.#control.getCurrentPlayIdx();
+                $(`#${currentPlayIdx - 1}`).click(); // Play next video when current ends
+            }
+        });
+    }
+
+    setControl(controlObj) {
+      this.#control = controlObj;
+    }
+
+    play(url) {
+        if (!url) return false;
+
+        this.#url = url;
+        this.#isPaused = false;
+        this.#video.src = url;
+        this.#video.playbackRate = this.#SPEEDS[this.#speedIdx];
+
+        return true;
+    }
+
+    togglePlayPause() {
+        if (!this.#url) return false;
+
+        if (this.#isPaused) {
+            this.#video.play();
+            this.#isPaused = false;
+        }
+        else {
+            this.#video.pause()
+            this.#isPaused = true;
+        }
+        return true;
+    }
+
+    isPaused() {
+        return this.#isPaused;
+    }
+
+    speedUp() {
+        if (!this.#url) return false;                        // Ignore if not playing anything
+        if ((this.#speedIdx == (this.#SPEEDS.length - 1)) && // Ignore if already at max speed
+            !this.#isPaused) return false;                   // and not paused
+
+        if (this.#isPaused) {
+            this.#speedIdx = this.#PAUSED_SPEED_IDX; // Set speed index to stopped
+            this.togglePlayPause();                  // Toggle playback to commence
+        }
+
+        // Increment playback rate
+        this.#video.playbackRate = this.#SPEEDS[++this.#speedIdx];
+
+        return true;
+    }
+
+    speedDown() {
+        if (!this.#url) return false;          // Ignore if not playing anything
+        if (this.#speedIdx == 0) return false; // Ignore if already at min speed
+
+        if (this.#isPaused) {
+            this.togglePlayPause(); // Toggle playback to commence
+        }
+
+        // Decrement playback rate
+        this.#video.playbackRate = this.#SPEEDS[--this.#speedIdx];
+
+        return true;
+    }
+
+    resetSpeed() {
+        // Reset speed to normal playback rate
+        this.#speedIdx           = this.#NORMAL_SPEED_IDX;
+        this.#video.playbackRate = this.#SPEEDS[this.#speedIdx];
+    }
+
+    seekForward() {
+        this.#video.currentTime += this.#SEEK_TIME_SECS;
+    }
+
+    seekBack() {
+        this.#video.currentTime -= this.#SEEK_TIME_SECS;
+    }
+
+    setPosition(position) {
+        this.#video.currentTime = position;
+    }
+
+    getPosition() {
+        return this.#video.currentTime;
+    }
+
+    getStatusString() {
+        return (this.#isPaused) ? "Paused" : `x${this.#SPEEDS[this.#speedIdx]}`;
+    }
+}
+
+
+class Recordings {
+    #captureDir      = null; // Capture directory
+    #camera          = null; // Camera name
+    #cameraList      = null;
+    #loadedCbs       = [];   // List of callbacks to notify when recordings loaded
+    #recordings      = [];   // Recordings in reverse chronological order (including non playable live first)
+    #dayBoundaryIdxs = [];   // List of day boundary indexes i.e. indexes of first recording in each day
+
+    constructor(camera, cameraList, captureDir) {
+        // Trigger loading recordings for this camera
+        this.setCamera(camera);
+
+        this.#cameraList = cameraList;
+        this.#captureDir = captureDir;
+    }
+
+    #loadRecordings() {
+      fetch(`/recordings?c=${this.#camera}`)
+          .then((response) => {
+              if (response.ok) return response.json();
+          })
+          .then((json) => {
+              if (!json) return;
+
+              this.#recordings      = []; // Empty all existing recordings entries
+              this.#dayBoundaryIdxs = []; // Empty all day boundary entries
+
+              for (let i = 0, currentDay = null; i < json.recordings.length; i++) {
+                  let [file, crtime] = json.recordings[i];
+
+                  let dateObj = new Date(crtime * 1000);
+                  let year  = dateObj.getFullYear();
+                  let month = dateObj.getMonth();
+                  let date  = dateObj.getDate();
+                  let day   = dateObj.getDay();
+                  let hrs   = dateObj.getHours();
+                  let mins  = dateObj.getMinutes();
+                  let secs  = dateObj.getSeconds();
+
+                  if (currentDay != day) {
+                      if (currentDay != null) {
+                          this.#dayBoundaryIdxs.push(i);
+                      }
+                      currentDay = day;
+                  }
+                  this.#recordings.push([file, crtime, year, month, date, day, hrs, mins, secs]);
+              }
+              // Call loaded callbacks
+              for (const callback of this.#loadedCbs) callback();
+          });
+    }
+
+    setLoadedCb(callback) {
+        this.#loadedCbs.push(callback);
+    }
+
+    setCamera(camera) {
+        this.#camera = camera;
+        this.#loadRecordings();
+    }
+
+    prevCamera() {
+        let idx = this.#cameraList.indexOf(this.#camera);
+        if ((idx == -1) || (idx == 0)) return false;
+
+        this.setCamera(this.#cameraList[--idx]);
+        return true;
+    }
+
+    nextCamera() {
+        let idx = this.#cameraList.indexOf(this.#camera);
+        if ((idx == -1) || (idx == (this.#cameraList.length - 1))) return false;
+
+        this.setCamera(this.#cameraList[++idx]);
+        return true;
+    }
+
+    getNumRecordings() {
+        return this.#recordings.length;
+    }
+
+    getDayBoundaryIndexes() {
+        return this.#dayBoundaryIdxs;
+    }
+
+    getDateFields(idx) {
+        if ((idx < 0) || (idx >= this.#recordings.length)) return;
+
+        return this.#recordings[idx].slice(2); // Return only date related fields
+    }
+
+    getPlayUrl(idx) {
+        if ((idx < 0) || (idx >= this.#recordings.length)) return;
+
+        // Return the live stream URL for first recording or playback URL otherwise
+        return (idx == 0)
+            ? `/${CAPTURE_DIR}/${this.#camera}/high_res/live.m3u8`
+            : `/${CAPTURE_DIR}/${this.#camera}/${this.#recordings[idx][0]}`;
+    }
+
+    getIdxAndOffsetForTime(t) {
+        for (let i = 0; i < this.#recordings.length; i++) {
+            let [file, crtime, year, month, date, day, hrs, mins, secs] = this.#recordings[i];
+
+            if (t >= crtime) {
+                let offset = t - crtime; // Position must be in seconds
+                return [i, offset];
+                break;
+            }
+        }
+        return undefined;
+      }
+
+    getStartTimeEpochSecs(idx) {
+        if ((idx < 0) || (idx >= this.#recordings.length)) return;
+
+        let [file, crtime, year, month, date, day, hrs, mins, secs] = this.#recordings[idx];
+        return crtime;
+    }
+}
+
 
 class Control {
     #LIVE_PLAY_ID                   = 0;    // ID of live playback stream
