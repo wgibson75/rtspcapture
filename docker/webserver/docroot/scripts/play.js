@@ -24,7 +24,25 @@ class Playback {
         this.#video.addEventListener("ended", e => {
             if (this.#control != null) {
                 let currentPlayIdx = this.#control.getCurrentPlayIdx();
-                $(`#${currentPlayIdx - 1}`).click(); // Play next video when current ends
+
+                $(`#${--currentPlayIdx}`).click();           // Play the next video
+                this.#control.scrollToEntry(currentPlayIdx); // Scroll to next video entry
+            }
+        });
+
+        this.#video.addEventListener("play", e => {
+            this.#isPaused = false;
+
+            if (this.#control != null) {
+                this.#control.showPlaybackState();
+            }
+        });
+
+        this.#video.addEventListener("pause", e => {
+            this.#isPaused = true;
+
+            if (this.#control != null) {
+                this.#control.showPlaybackState();
             }
         });
     }
@@ -283,7 +301,7 @@ class Control {
             // Get the entry index and offset position that matches this playback time
             let [idx, offset] = this.#recordings.getIdxAndOffsetForTime(this.#nextPlaybackTime);
 
-            this.#scrollToEntry(idx);          // Scroll to the entry
+            this.scrollToEntry(idx);          // Scroll to the entry
             $(`#${idx}`).click();              // Click the entry to trigger playback
             this.#playback.setPosition(offset) // Set the playback position
 
@@ -294,11 +312,6 @@ class Control {
             $(`#${this.#LIVE_PLAY_ID}`).click();
             this.#playback.resetSpeed();
         }
-    }
-
-    #showPlaybackState() {
-        $("#play-pause").html(this.#playback.isPaused() ? "Play" : "Pause");
-        $("#play-state").html(this.#playback.getStatusString());
     }
 
     #showButtonPress(button) {
@@ -371,13 +384,6 @@ class Control {
         return startTime + position;
     }
 
-    #scrollToEntry(idx) {
-        let panel = $(`#${this.#entriesId}`);
-        let entry = $(`#${idx}`);
-
-        panel.scrollTop(entry.offset().top - panel.offset().top + panel.scrollTop());
-    }
-
     // Note: recording index and corresponding entry ID in control pane are the same
     play(idx) {
         let url = this.#recordings.getPlayUrl(idx);
@@ -393,11 +399,23 @@ class Control {
         $("#" + idx).addClass("entry-playback-selected");
         this.#currentPlayId = idx;
 
-        this.#showPlaybackState();
+        this.showPlaybackState();
     }
 
     getCurrentPlayIdx() {
         return this.#currentPlayId;
+    }
+
+    scrollToEntry(idx) {
+        let panel = $(`#${this.#entriesId}`);
+        let entry = $(`#${idx}`);
+
+        panel.scrollTop(entry.offset().top - panel.offset().top + panel.scrollTop());
+    }
+
+    showPlaybackState() {
+        $("#play-pause").html(this.#playback.isPaused() ? "Play" : "Pause");
+        $("#play-state").html(this.#playback.getStatusString());
     }
 
     isFlipped() {
@@ -407,7 +425,7 @@ class Control {
     togglePlayPause(button) {
         if (this.#playback.togglePlayPause()) {
             this.#showButtonPress(button);
-            this.#showPlaybackState();
+            this.showPlaybackState();
         }
     }
 
@@ -415,7 +433,7 @@ class Control {
         if (this.#currentPlayId == this.#LIVE_PLAY_ID) return; // Do not support on live
         if (this.#playback.speedUp()) {
             this.#showButtonPress(button);
-            this.#showPlaybackState();
+            this.showPlaybackState();
         }
     }
 
@@ -423,7 +441,7 @@ class Control {
         if (this.#currentPlayId == this.#LIVE_PLAY_ID) return; // Do not support on live
         if (this.#playback.speedDown()) {
             this.#showButtonPress(button);
-            this.#showPlaybackState();
+            this.showPlaybackState();
         }
     }
 
