@@ -257,6 +257,17 @@ class Recordings {
         let [file, crtime, year, month, date, day, hrs, mins, secs] = this.#recordings[idx];
         return crtime;
     }
+
+    getCameraName() {
+        let name = this.#camera.replace(/_/g, " ");
+        let words = name.split(" ");
+        words.forEach((word, idx) => {
+            if (word != "of") {
+                words[idx] = word.charAt(0).toUpperCase() + word.slice(1);
+            }
+        });
+        return words.join(" ");
+    }
 }
 
 
@@ -268,6 +279,7 @@ class Control {
     #recordings      = null;
     #playback        = null;
     #controlId       = null;
+    #titleId         = null;
     #entriesId       = null;
     #playPauseId     = null;
     #playbackStateId = null;
@@ -285,6 +297,7 @@ class Control {
         this.#recordings      = recsObj;
         this.#playback        = playObj;
         this.#controlId       = elementIds["controlId"];
+        this.#titleId         = elementIds["titleId"];
         this.#entriesId       = elementIds["entriesId"];
         this.#playPauseId     = elementIds["playPauseButtonId"];
         this.#playbackStateId = elementIds["playbackStateId"];
@@ -296,6 +309,7 @@ class Control {
 
     #recordingsLoadedCb() {
         this.#populate();
+        this.#showCameraName();
 
         if (this.#nextPlaybackTime != null) {
             // Get the entry index and offset position that matches this playback time
@@ -312,6 +326,10 @@ class Control {
             $(`#${this.#LIVE_PLAY_ID}`).click();
             this.#playback.resetSpeed();
         }
+    }
+
+    #showCameraName() {
+        $(`#${this.#titleId}`).text(this.#recordings.getCameraName());
     }
 
     #showButtonPress(button) {

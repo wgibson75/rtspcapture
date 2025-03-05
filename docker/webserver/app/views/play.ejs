@@ -45,6 +45,7 @@
     // Setup IDs for all control elements
     let controlElements = {
       controlId         : "control",
+      titleId           : "title",
       entriesId         : "entries",
       playPauseButtonId : "play-pause",
       playbackStateId   : "play-state",
@@ -175,6 +176,7 @@
     <div id="fullscreen">
       <video id="video" type="video/mp4" playsinline autoplay muted controls></video>
       <div id="control">
+        <div class="title" id="title"></div>
         <div class="button-group">
           <div id="speed-down" class="button" onclick="speedDown(this)">&lt;&lt;</div>
           <div id="play-pause" class="button" onclick="togglePlayPause(this)">Pause</div>
