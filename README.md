@@ -526,17 +526,40 @@ When selecting **Console** from the Home page, you will see a mosaic of live vid
 
 Selecting any of these live streams will bring up the high definition video stream for the corresponding camera. This high definition stream includes a draggable OSD pane that will show all of the recordings from the camera grouped by day in reverse chronological order; these are shown in a scrollable list. These recordings can be selected for playback and the buttons at the top of the pane can be used to control playback. The current playback state is always shown in bright green italics below the buttons.
 
-![Home page](images/high-definition-stream.jpg)
+![High def view](images/high-definition-stream.jpg)
 
 On a MacBook (or iPad with keyboard), the following keys can also be used to control playback:
 
 | Key | Function |
 | --- | --- |
-| LEFT cursor | Slows down the playback rate |
-| RIGHT cursor | Speeds up the playback rate |
-| SPACE or DOWN cursor | Toggles play/pause |
-| OPTION + LEFT cursor | Seeks back by 30 seconds |
-| OPTION + RIGHT cursor | Seeks forward by 30 seconds |
+| COMMAND + LEFT cursor | Back to console |
+| LEFT cursor | Slow down the playback rate |
+| RIGHT cursor | Speed up the playback rate |
+| SPACE or DOWN cursor | Toggle play/pause |
+| OPTION + LEFT cursor | Seek back by 30 seconds |
+| OPTION + RIGHT cursor | Seek forward by 30 seconds |
+| SHIFT + LEFT cursor | Show previous camera |
+| SHIFT + RIGHT cursor | Show next camera |
 
 In addition to these controls, you can use the standard seek bar shown when selecting the video background to seek to any point in the current recording. When a recording ends, the next recording will automatically play at the current playback rate. Selecting a new recording for playback will always reset the playback rate to x1 speed.
+
+### High Definition Video Stream on an iPhone
+
+When the viewing the high definition video stream on an iPhone you will see an extra row of bottons on the bottom of the control to cater for no keyboard being available.
+
+![High def view on iPhone](images/right-repo-iphone-view.jpg)
+
+These buttons provide the following behaviour:
+
+| Button | Function |
+| --- | --- |
+| \|<< | Seek back by 30 seconds |
+| Repo | Toggle repositioning the control to other side of screen |
+| >>\| | Seek forward by 30 seconds |
+
+For example, hitting the **Repo** button will do this to the control:
+
+![High def view on iPhone](images/left-repo-iphone-view.jpg)
+
+
 
