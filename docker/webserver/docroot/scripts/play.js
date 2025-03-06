@@ -139,16 +139,17 @@ class Playback {
 
 
 class Recordings {
-    #captureDir      = null; // Capture directory
-    #camera          = null; // Camera name
-    #cameraList      = null;
-    #loadedCbs       = [];   // List of callbacks to notify when recordings loaded
-    #recordings      = [];   // Recordings in reverse chronological order (including non playable live first)
-    #dayBoundaryIdxs = [];   // List of day boundary indexes i.e. indexes of first recording in each day
+    #captureDir       = null; // Capture directory
+    #camera           = null; // Camera name
+    #cameraList       = null;
+    #loadedCbs        = [];   // List of callbacks to notify when recordings loaded
+    #recordings       = [];   // Recordings in reverse chronological order (including non playable live first)
+    #dayBoundaryIdxs  = [];   // List of day boundary indexes i.e. indexes of first recording in each day
+    #noUpperCaseWords = {};   // Lookup of words in camera name to not upper case first letter
 
     constructor(camera, cameraList, captureDir) {
-        // Trigger loading recordings for this camera
-        this.setCamera(camera);
+        this.setCamera(camera);              // Trigger loading recordings for this camera
+        this.#buildNoUpperCaseWordsLookup(); // Build list of words to not upper case in camera name
 
         this.#cameraList = cameraList;
         this.#captureDir = captureDir;
@@ -188,6 +189,13 @@ class Recordings {
               // Call loaded callbacks
               for (const callback of this.#loadedCbs) callback();
           });
+    }
+
+    #buildNoUpperCaseWordsLookup() {
+        let words = ["and", "in", "of", "or"];
+        for (let w of words) {
+            this.#noUpperCaseWords[w] = true;
+        }
     }
 
     setLoadedCb(callback) {
@@ -259,13 +267,14 @@ class Recordings {
     }
 
     getCameraName() {
-        let name = this.#camera.replace(/_/g, " ");
-        let words = name.split(" ");
+        let words = this.#camera.split(/[_-]/); // Split camera name on hyphens and/or underscore
         words.forEach((word, idx) => {
-            if (word != "of") {
+            // Upper case first letter of words accordingly
+            if (!(word in this.#noUpperCaseWords)) {
                 words[idx] = word.charAt(0).toUpperCase() + word.slice(1);
             }
         });
+        // Join complete human readable name
         return words.join(" ");
     }
 }
