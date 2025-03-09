@@ -475,12 +475,14 @@ class Control {
     prevCam(button) {
         if (!this.#recordings.prevCamera()) return;
         if (button) this.#showButtonPress(button);
+        if (this.#currentPlayId == this.#LIVE_PLAY_ID) return; // Do not set playback time for live
         this.#nextPlaybackTime = this.#getCurrentPlaybackTime();
     }
 
     nextCam(button) {
         if (!this.#recordings.nextCamera()) return;
         if (button) this.#showButtonPress(button);
+        if (this.#currentPlayId == this.#LIVE_PLAY_ID) return; // Do not set playback time for live
         this.#nextPlaybackTime = this.#getCurrentPlaybackTime();
     }
 
