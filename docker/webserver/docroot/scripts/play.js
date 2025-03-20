@@ -55,9 +55,10 @@ class Playback {
         if (!url) return false;
 
         this.#url = url;
-        this.#isPaused = false;
         this.#video.src = url;
         this.#video.playbackRate = this.#SPEEDS[this.#speedIdx];
+
+        if (this.#isPaused) this.#video.pause()
 
         return true;
     }
@@ -324,7 +325,7 @@ class Control {
             // Get the entry index and offset position that matches this playback time
             let [idx, offset] = this.#recordings.getIdxAndOffsetForTime(this.#nextPlaybackTime);
 
-            this.scrollToEntry(idx);          // Scroll to the entry
+            this.scrollToEntry(idx);           // Scroll to the entry
             $(`#${idx}`).click();              // Click the entry to trigger playback
             this.#playback.setPosition(offset) // Set the playback position
 
