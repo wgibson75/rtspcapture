@@ -96,8 +96,8 @@ router.get('/recordings', ensureLoggedIn, function(request, response, next) {
 
     utils.getFilesSortedByDate(cameraDir, 'mp4').forEach((entry) => {
         recordings.push([
-            entry[0],                               // Recording filename
-            Math.round(entry[1].birthtimeMs / 1000) // Recording creation time EPOC as UTC in seconds
+            entry[0],                        // Recording filename
+            Math.round(entry[1].birthtimeMs) // Recording creation time EPOC as UTC in milliseconds
         ]);
     });
 

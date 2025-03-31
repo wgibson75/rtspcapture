@@ -52,7 +52,10 @@
       iphoneButtonsId   : "iphone-buttons"
     };
 
-    CONTROL = new Control(RECORDINGS, PLAYBACK, controlElements, positionControl);
+    // Optional start position epoch
+    let positionEpoch = PLAYBACK_TIME.length === 0 ? undefined : parseInt(PLAYBACK_TIME, 10);
+
+    CONTROL = new Control(RECORDINGS, PLAYBACK, controlElements, positionEpoch, positionControl);
 
     positionControl(false, false, CONTROL.isFlipped());
     PLAYBACK.setControl(CONTROL);

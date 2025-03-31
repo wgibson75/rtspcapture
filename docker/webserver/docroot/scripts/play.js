@@ -126,11 +126,11 @@ class Playback {
     }
 
     setPosition(position) {
-        this.#video.currentTime = position;
+        this.#video.currentTime = position / 1000;
     }
 
     getPosition() {
-        return this.#video.currentTime;
+        return Math.round(this.#video.currentTime * 1000);
     }
 
     getStatusString() {
@@ -170,7 +170,7 @@ class Recordings {
               for (let i = 0, currentDay = null; i < json.recordings.length; i++) {
                   let [file, crtime] = json.recordings[i];
 
-                  let dateObj = new Date(crtime * 1000);
+                  let dateObj = new Date(crtime);
                   let year  = dateObj.getFullYear();
                   let month = dateObj.getMonth();
                   let date  = dateObj.getDate();
@@ -178,6 +178,7 @@ class Recordings {
                   let hrs   = dateObj.getHours();
                   let mins  = dateObj.getMinutes();
                   let secs  = dateObj.getSeconds();
+                  let ms    = dateObj.getMilliseconds();
 
                   if (currentDay != day) {
                       if (currentDay != null) {
@@ -185,7 +186,7 @@ class Recordings {
                       }
                       currentDay = day;
                   }
-                  this.#recordings.push([file, crtime, year, month, date, day, hrs, mins, secs]);
+                  this.#recordings.push([file, crtime, year, month, date, day, hrs, mins, secs, ms]);
               }
               // Call loaded callbacks
               for (const callback of this.#loadedCbs) callback();
@@ -232,10 +233,11 @@ class Recordings {
         return this.#dayBoundaryIdxs;
     }
 
-    getDateFields(idx) {
+    getDateFieldsForDisplay(idx) {
         if ((idx < 0) || (idx >= this.#recordings.length)) return;
 
-        return this.#recordings[idx].slice(2); // Return only date related fields
+        // Return only date related fields and exclude milliseconds
+        return this.#recordings[idx].slice(2, 9);
     }
 
     getPlayUrl(idx) {
@@ -249,10 +251,10 @@ class Recordings {
 
     getIdxAndOffsetForTime(t) {
         for (let i = 0; i < this.#recordings.length; i++) {
-            let [file, crtime, year, month, date, day, hrs, mins, secs] = this.#recordings[i];
+            let [file, crtime, year, month, date, day, hrs, mins, secs, ms] = this.#recordings[i];
 
             if (t >= crtime) {
-                let offset = t - crtime; // Position must be in seconds
+                let offset = t - crtime; // Position must be in milliseconds
                 return [i, offset];
                 break;
             }
@@ -303,16 +305,17 @@ class Control {
 
     #isFlipped = false; // Only used for iPhone to flip positioning of control
 
-    constructor(recsObj, playObj, elementIds, repositionCb) {
-        this.#recordings      = recsObj;
-        this.#playback        = playObj;
-        this.#controlId       = elementIds["controlId"];
-        this.#titleId         = elementIds["titleId"];
-        this.#entriesId       = elementIds["entriesId"];
-        this.#playPauseId     = elementIds["playPauseButtonId"];
-        this.#playbackStateId = elementIds["playbackStateId"];
-        this.#iPhoneButtonsId = elementIds["iphoneButtonsId"];
-        this.#repositionCb    = repositionCb;
+    constructor(recsObj, playObj, elementIds, positionEpochMs, repositionCb) {
+        this.#recordings       = recsObj;
+        this.#playback         = playObj;
+        this.#controlId        = elementIds["controlId"];
+        this.#titleId          = elementIds["titleId"];
+        this.#entriesId        = elementIds["entriesId"];
+        this.#playPauseId      = elementIds["playPauseButtonId"];
+        this.#playbackStateId  = elementIds["playbackStateId"];
+        this.#iPhoneButtonsId  = elementIds["iphoneButtonsId"];
+        this.#nextPlaybackTime = positionEpochMs ? positionEpochMs : null;
+        this.#repositionCb     = repositionCb;
 
         this.#recordings.setLoadedCb(this.#recordingsLoadedCb.bind(this));
     }
@@ -327,7 +330,7 @@ class Control {
 
             this.scrollToEntry(idx);           // Scroll to the entry
             $(`#${idx}`).click();              // Click the entry to trigger playback
-            this.#playback.setPosition(offset) // Set the playback position
+            this.#playback.setPosition(offset) // Set the playback position in milliseconds
 
             this.#nextPlaybackTime = null;
         }
@@ -373,7 +376,7 @@ class Control {
 
         // Now populate all entries in the control pane showing
         for (let idx = 0; idx < this.#recordings.getNumRecordings(); idx++) {
-            let [year, month, date, day, hrs, mins, secs] = this.#recordings.getDateFields(idx);
+            let [year, month, date, day, hrs, mins, secs] = this.#recordings.getDateFieldsForDisplay(idx);
 
             // Format certain time fields
             date  = ("0" + date).slice(-2);
