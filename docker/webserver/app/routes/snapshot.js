@@ -43,15 +43,11 @@ router.get(/^\/snapshot$/, function(request, response, next) {
             logger.info('No such camera: ' + cam);
             return;
         }
-        let image = takeSnapshot(cam, timestamp);
 
-        let activeRecAndPos = getActiveRecordingAndPosition(cam, timestamp);
-        if (!activeRecAndPos) { return; } // Skip this camera if no active recording
+        let imageFile = takeSnapshot(cam, timestamp);
 
-        let [recording, position] = activeRecAndPos;
-
-        // Push a tuple of snapshot image URL, recording URL and playback position
-        snapshots.push([image, recording, position]);
+        // Push a tuple of snapshot image URL, camera name and timestamp
+        snapshots.push([imageFile, cam]);
     });
 
     if (snapshots.length == 0) { return; }
@@ -96,54 +92,15 @@ function takeSnapshot(camera, timestamp) {
     return path.basename(snapshotFile);
 }
 
-function getActiveRecordingAndPosition(camera, timestampNow) {
-    let cameraDir = path.join(config.get('root_path'), config.get('capture_dir'), camera);
-
-    if (!fs.existsSync(cameraDir)) {
-        logger.error('Directory does not exist: ' + cameraDir);
-        return;
-    }
-
-    let files = [];
-    let regex = new RegExp('.*\.' + VIDEO_EXT);
-    fs.readdirSync(cameraDir).forEach((filename) => {
-        if (!filename.match(regex)) {
-            return;
-        }
-        let fstat = fs.statSync(cameraDir + '/' + filename);
-        files.push([filename, fstat]);
-    });
-
-    if (files.length == 0) {
-        logger.error('No video files in: ' + cameraDir);
-        return;
-    }
-
-    let sortedFiles  = utils.sortFilesByDate(files);
-    let [activeFile, previousFile] = sortedFiles.slice(0, 2);
-    let position = 0; // Report zero position if cannot determine position
-
-    // Determine the current position using the last
-    // modified time of the previous video file
-    if (previousFile) {
-        let fstat = previousFile[1];
-        // Report position in seconds
-        position = Math.floor((timestampNow - fstat.mtime.getTime()) / 1000);
-    }
-    let recordingUrl = path.join('/', config.get('capture_dir'), camera, activeFile[0]);
-
-    return [recordingUrl, position];
-}
-
 function createSnapshotSummary(name, timestamp, snapshots) {
     var file = path.join(config.get('snapshot_path'), util.format('%s_%s.html', name, timestamp));
 
     logger.info('Creating: ' + file);
     var entries = [];
     snapshots.forEach((entry) => {
-        let [imageFile, videoUrl, position] = entry;
+        let [imageFile, camera] = entry;
         let imageUrl = path.join(config.get('snapshot_images_dir'), imageFile);
-        entries.push({ image: imageUrl, video: videoUrl, pos: position });
+        entries.push({ imageUrl: imageUrl, camera: camera, timestamp: timestamp });
     });
     var template = fs.readFileSync('views/snapshot.ejs', 'utf-8');
     var html     = ejs.render (template , { entries: entries });
