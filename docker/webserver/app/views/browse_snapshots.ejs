@@ -39,6 +39,10 @@
         height: 100%;
       }
 
+      #time {
+        color: #99ebff;
+      }
+
       .holder {
         width: 100%;
         height: 100%;
@@ -228,40 +232,35 @@
     }
   }
 
-  function keypressHandler(e) {
-    if (e.code == 'Space') nextSnapshot();
-  }
-
   function keydownHandler(e) {
     if (e.code == 'ArrowLeft') {
       prevSnapshot();
     }
-    else if (e.code == 'ArrowRight') {
+    else if ((e.code == 'ArrowRight') || (e.code == 'Space')) {
       nextSnapshot();
     }
   }
 
   function init() {
-    document.addEventListener('keypress', keypressHandler);
-    document.addEventListener('keydown', keydownHandler);
+    document.onkeydown = keydownHandler;
   }
 
   </script>
-   <body onload="init()" bgcolor="black">
-     <div class="holder">
-       <div id="main">
-       </div>
-       <div id="control">
-         <table class="control">
-           <tr>
-             <td width="54%" id="time">Loading please wait...</td>
-             <td width="10%" onclick="document.location.replace('/')">HOME</td>
-             <td width="20%" id="filter"></td>
-             <td width="8%" onclick="prevSnapshot()">&lt;&lt;</td>
-             <td width="8%" onclick="nextSnapshot()">&gt;&gt;</td>
-           </tr>
-         </table>
-       </div>
+    <body onload="init()" bgcolor="black">
+      <div class="holder">
+        <div id="main">
+        </div>
+        <div id="control">
+          <table class="control">
+            <tr>
+              <td width="54%" id="time">Loading please wait...</td>
+              <td width="10%" onclick="document.location.replace('/')">HOME</td>
+              <td width="20%" id="filter"></td>
+              <td width="8%" onclick="prevSnapshot()">&lt;&lt;</td>
+              <td width="8%" onclick="nextSnapshot()">&gt;&gt;</td>
+            </tr>
+          </table>
+        </div>
      </div>
   </body>
 </html>

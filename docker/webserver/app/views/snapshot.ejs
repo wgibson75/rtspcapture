@@ -2,9 +2,14 @@
   <head>
     <title>Video Snapshot</title>
   </head>
-  <body style="background-color: black; margin: 0; height: 100%" id="body">
+  <body style="background-color: black; margin: 0; height: 100%" onload="init()">
     <div style="font-size: 0" id="main">
     <script>
+
+    function init() {
+        // Ensure keydown handler in top level frame is always reinstated
+        document.onkeydown = top.keydownHandler;
+    }
 
     var snapshots = [];
     <% entries.forEach(entry => { %>snapshots.push([ "<%= entry.imageUrl %>", "<%= entry.camera %>", <%= entry.timestamp %> ]);
