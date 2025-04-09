@@ -1,5 +1,7 @@
 <html>
   <head>
+    <title>Browse Snapshots</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link href="jquery-ui-1-13-2.css" rel="stylesheet">
     <script src="jquery-3.7.1.min.js"></script>
     <script src="jquery-ui-1-13-2.min.js"></script>
@@ -9,27 +11,30 @@
         width: 100vw;
       }
 
-      table {
-        width: 100%;
-        padding: 10px;
-        border-spacing: 10px;
-      }
-
-      td {
-        text-align: center;
-      }
-
-      select {
-        appearance: none;
-        background-color: rgba(64, 64, 64, 0.5);
-        color: #66ff33;
-        cursor: pointer;
-      }
-
       #control {
+        display: flex;
+        flex-direction: column;
         position: absolute;
-        width: 100%;
-        height: 50px;
+        border-radius: 6px;
+        background-color: rgba(128, 128, 128, 0.5);
+      }
+
+      #time {
+        border-radius: 0px 0px 0px 0px;
+        padding: 4px;
+        font-size: small;
+        text-align: center;
+        vertical-align: middle
+        font-style: italic;
+        color: yellow;
+      }
+
+      #filter {
+        width: 100;
+      }
+
+      #home {
+        width: 50;
       }
 
       #snapshot {
@@ -37,14 +42,12 @@
         height: 100%;
       }
 
-      #time {
-        color: #99ebff;
-      }
-
-      .holder {
-        width: 100%;
-        height: 100%;
-        position: relative;
+      .button-group {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        background-color: rgba(160, 160, 160, 0.5);
+        border-radius: 6px 6px 6px 6px;
       }
 
       .button {
@@ -54,22 +57,35 @@
         border-radius: 6px 6px 6px 6px;
         padding: 4px;
         background-color: rgba(64, 64, 64, 0.5);
+        font-size: small;
         text-align: center;
         color: #66ff33;
+        width: 25;
       }
+
+      .holder {
+        width: 100%;
+        height: 100%;
+        position: relative;
+      }
+
+      select {
+        appearance: none;
+        background-color: rgba(64, 64, 64, 0.5);
+        color: #66ff33;
+        cursor: pointer;
+      }
+
     </style>
   </head>
   <script>
 
   const SNAPSHOTS_DIR = '<%= snapshots_dir %>';
   const JSON_SUMMARY_FILE = `${SNAPSHOTS_DIR}/snapshots.json`;
-  const CONTROL_OFFSET_P = '270px';
-  const CONTROL_OFFSET_H = '80px';
-  const CONTROL_TEXT_SIZE_P = '30pt';
-  const CONTROL_TEXT_SIZE_H = '25pt';
   const SNAPSHOT_FILTER_ALL = '*';
   const NAVIGATE_PREV = 0;
   const NAVIGATE_NEXT = 1;
+  const MARGIN_CONTROL_TOP_PCT = 80;
 
   let Snapshots = [];
   let Filter = SNAPSHOT_FILTER_ALL;
@@ -77,24 +93,28 @@
   let Orientation = window.orientation;
   let LastNavigation = NAVIGATE_NEXT;
 
-  function positionControls() {
-    if (Orientation == 0) { // If portrait
-      $('#control').css('bottom', CONTROL_OFFSET_P);
-      $('.control').css('fontSize', CONTROL_TEXT_SIZE_P);
-    }
-    else {
-      $('#control').css('bottom', CONTROL_OFFSET_H);
-      $('.control').css('fontSize', CONTROL_TEXT_SIZE_H);
-    }
+  // Doesn't work for iPad unfortunately i.e. iPad reported as Mac (clearly a bug!)
+  const IS_IPHONE = (/iPhone/.test(navigator.userAgent)) ? true : false;
+
+  function isIphonePortrait() {
+    return (IS_IPHONE && (screen.orientation.type == "portrait-primary"));
+  }
+
+  function positionControl() {
+    let top = isIphonePortrait() ? MARGIN_CONTROL_TOP_PCT : MARGIN_CONTROL_TOP_PCT - 10;
+    let left = ($(window).width() - $("#control").width()) / 2;
+
+    $("#control").css("top", `${top}%`);
+    $("#control").css("left", `${left}`);
   }
 
   $(document).ready(function () {
-    positionControls();
-
-    // Make the controls draggable
+    // Make the control draggable on supported devices
     $(function() {
       $('#control').draggable();
     });
+
+    positionControl();
 
     $.getJSON(JSON_SUMMARY_FILE, function(data) {
       if (!(data instanceof Object)) return;
@@ -109,7 +129,11 @@
 
   $(window).bind("orientationchange", function() {
     Orientation = window.orientation;
-    positionControls();
+    positionControl();
+  });
+
+  $(window).bind("resize", function() {
+    positionControl();
   });
 
   function getSnapshotUrl(index) {
@@ -218,8 +242,6 @@
       $('<option />', {value: entry, text: entry}).appendTo(f);
     });
     f.appendTo('#filter');
-
-    positionControls(); // Position this control
   }
 
   function applyFilter() {
@@ -260,15 +282,13 @@
         <div id="main">
         </div>
         <div id="control">
-          <table class="control">
-            <tr>
-              <td width="54%" id="time">Loading please wait...</td>
-              <td width="10%" class="button" onclick="document.location.replace('/')">Home</td>
-              <td width="20%" class="button" id="filter"></td>
-              <td width="8%" class="button" onclick="prevSnapshot()">&lt;&lt;</td>
-              <td width="8%" class="button" onclick="nextSnapshot()">&gt;&gt;</td>
-            </tr>
-          </table>
+          <div class="time" id="time"></div>
+          <div class="button-group">
+            <div class="button" id="home" onclick="document.location.replace('/')">Home</div>
+            <div class="button" id="filter"></div>
+            <div class="button" id="prev" onclick="prevSnapshot()">&lt;&lt;</div>
+            <div class="button" id="next" onclick="nextSnapshot()">&gt;&gt;</div>
+          </div>
         </div>
      </div>
   </body>

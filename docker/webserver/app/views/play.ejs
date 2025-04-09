@@ -22,9 +22,11 @@
   // Doesn't work for iPad unfortunately i.e. iPad reported as Mac (clearly a bug!)
   const IS_IPHONE = (/iPhone/.test(navigator.userAgent)) ? true : false;
 
-  // Percentage height to add to top margin of control and remove from
-  // height of control for iPhone when orientation is portrait
-  const IPHONE_HEIGHT_DELTA_CONTROL_PCT = 35;
+  // Percentage to add to top margin of control for iPhone portrait
+  const IPHONE_TOP_DELTA_CONTROL_PCT    = 28;
+
+  // Percentage to remove from height of control for iPhone portrait
+  const IPHONE_HEIGHT_DELTA_CONTROL_PCT = 40;
 
   var RECORDINGS = null; // Set to Recordings object to manage recordings data
   var PLAYBACK   = null; // Set to Playback object to control video playback operations
@@ -77,7 +79,7 @@
       : HEIGHT_CONTROL_PCT;
 
     let top = isIphonePortrait()
-      ? MARGIN_CONTROL_TOP_PCT + IPHONE_HEIGHT_DELTA_CONTROL_PCT
+      ? MARGIN_CONTROL_TOP_PCT + IPHONE_TOP_DELTA_CONTROL_PCT
       : MARGIN_CONTROL_TOP_PCT;
 
     $("#control").css("height", `${height}%`);
