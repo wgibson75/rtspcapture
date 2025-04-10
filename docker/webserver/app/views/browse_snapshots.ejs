@@ -86,6 +86,8 @@
   const NAVIGATE_PREV = 0;
   const NAVIGATE_NEXT = 1;
   const MARGIN_CONTROL_TOP_PCT = 80;
+  const MARGIN_CONTROL_NON_IPHONE_TOP_DELTA = 15;
+  const MARGIN_CONTROL_LANDSCAPE_IPHONE_TOP_DELTA = 6;
 
   let Snapshots = [];
   let Filter = SNAPSHOT_FILTER_ALL;
@@ -103,6 +105,14 @@
   function positionControl() {
     let top = isIphonePortrait() ? MARGIN_CONTROL_TOP_PCT : MARGIN_CONTROL_TOP_PCT - 10;
     let left = ($(window).width() - $("#control").width()) / 2;
+
+    if (!IS_IPHONE) {
+      top += MARGIN_CONTROL_NON_IPHONE_TOP_DELTA;
+    }
+
+    if (IS_IPHONE && !isIphonePortrait()) {
+      top += MARGIN_CONTROL_LANDSCAPE_IPHONE_TOP_DELTA;
+    }
 
     $("#control").css("top", `${top}%`);
     $("#control").css("left", `${left}`);
