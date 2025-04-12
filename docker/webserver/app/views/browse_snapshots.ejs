@@ -2,98 +2,22 @@
   <head>
     <title>Browse Snapshots</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link href="/css/browse_snapshots.css" rel="stylesheet" />
     <link href="jquery-ui-1-13-2.css" rel="stylesheet">
     <script src="jquery-3.7.1.min.js"></script>
     <script src="jquery-ui-1-13-2.min.js"></script>
-    <style>
-      body {
-        height: 100vh;
-        width: 100vw;
-      }
-
-      #control {
-        display: flex;
-        flex-direction: column;
-        position: absolute;
-        border-radius: 6px;
-        background-color: rgba(128, 128, 128, 0.5);
-      }
-
-      #time {
-        border-radius: 0px 0px 0px 0px;
-        padding: 4px;
-        font-size: small;
-        text-align: center;
-        vertical-align: middle
-        font-style: italic;
-        color: yellow;
-      }
-
-      #filter {
-        width: 100;
-      }
-
-      #home {
-        width: 50;
-      }
-
-      #snapshot {
-        width: 100%;
-        height: 100%;
-      }
-
-      .button-group {
-        display: flex;
-        flex-direction: row;
-        justify-content: space-between;
-        background-color: rgba(160, 160, 160, 0.5);
-        border-radius: 6px 6px 6px 6px;
-      }
-
-      .button {
-        border-style: solid;
-        border-width: thin;
-        border-color: rgba(64, 64, 64, 0.5);
-        border-radius: 6px 6px 6px 6px;
-        padding: 4px;
-        background-color: rgba(64, 64, 64, 0.5);
-        font-size: small;
-        text-align: center;
-        color: #66ff33;
-        width: 25;
-      }
-
-      .holder {
-        width: 100%;
-        height: 100%;
-        position: relative;
-      }
-
-      select {
-        appearance: none;
-        background-color: rgba(64, 64, 64, 0.5);
-        color: #66ff33;
-        cursor: pointer;
-      }
-
-    </style>
+    <script src="/scripts/browse_snapshots.js"></script>
   </head>
   <script>
 
   const SNAPSHOTS_DIR = '<%= snapshots_dir %>';
   const JSON_SUMMARY_FILE = `${SNAPSHOTS_DIR}/snapshots.json`;
-  const SNAPSHOT_FILTER_ALL = '*';
-  const NAVIGATE_PREV = 0;
-  const NAVIGATE_NEXT = 1;
   const MARGIN_CONTROL_TOP_PCT = 80;
   const MARGIN_CONTROL_NON_IPHONE_TOP_DELTA = 15;
   const MARGIN_CONTROL_LANDSCAPE_IPHONE_TOP_DELTA = 6;
 
-  let Snapshots = [];
-  let Filter = SNAPSHOT_FILTER_ALL;
-  let SnapshotsIndex = 0;
-  let Orientation = window.orientation;
-  let LastNavigation = NAVIGATE_NEXT;
+  var SNAPSHOTS = null; // Set to the Snapshots object for loading and showing snapshots
+  var CONTROL   = null; // Set to the Control object for controlling snapshots
 
   // Doesn't work for iPad unfortunately i.e. iPad reported as Mac (clearly a bug!)
   const IS_IPHONE = (/iPhone/.test(navigator.userAgent)) ? true : false;
@@ -126,152 +50,33 @@
 
     positionControl();
 
-    $.getJSON(JSON_SUMMARY_FILE, function(data) {
-      if (!(data instanceof Object)) return;
-      if (!('snapshots' in data)) return;
+    // IDs of snapshot elements
+    let snapshotElements = {
+      mainId : "main",
+      timeId : "time"
+    };
 
-      Snapshots = data.snapshots;
-      insertSnapshotPane();
-      showSnapshot();
-      showFilters();
-    });
+    SNAPSHOTS = new Snapshots(JSON_SUMMARY_FILE, snapshotElements);
+
+    // IDs of control elements
+    let controlElements = {
+      controlId : "control",
+      homeId    : "home",
+      filterId  : "filter",
+      prevId    : "prev",
+      nextId    : "next"
+    }
+
+    CONTROL = new Control(SNAPSHOTS, controlElements);
   });
 
   $(window).bind("orientationchange", function() {
-    Orientation = window.orientation;
     positionControl();
   });
 
   $(window).bind("resize", function() {
     positionControl();
   });
-
-  function getSnapshotUrl(index) {
-    return 'snapshots/' + Snapshots[index];
-  }
-
-  function getSnapshotTime(index) {
-    let filename = Snapshots[index];
-    let filenameNoExt = filename.split('.')[0];
-    let epoch = filenameNoExt.split('_')[1];
-    return epoch;
-  }
-
-  function showSnapshot() {
-    let banner = document.getElementById('banner');
-    let time = getSnapshotTime(SnapshotsIndex);
-    let date = new Date(0);
-    date.setUTCMilliseconds(time);
-    let d = date.toString().split(' ');
-    d.splice(5, d.length - 5);
-    d.splice(3, 1);
-    document.getElementById('time').innerHTML = d.join(' ');
-
-    let snapshot = document.getElementById('snapshot');
-    snapshot.src = getSnapshotUrl(SnapshotsIndex);
-  }
-
-  function insertSnapshotPane() {
-    var p = $('<iframe id="snapshot"></iframe>');
-    p.appendTo('#main');
-  }
-
-  function nextSnapshot() {
-    if (Snapshots.length == 0) return;
-    LastNavigation = NAVIGATE_NEXT;
-
-    if (Filter == SNAPSHOT_FILTER_ALL) {
-      if ((SnapshotsIndex + 1) < Snapshots.length) {
-        showSnapshot(++SnapshotsIndex);
-      }
-    }
-    else {
-      let index = SnapshotsIndex;
-      while ((index + 1) < Snapshots.length) {
-        if (Snapshots[++index].startsWith(Filter)) {
-          SnapshotsIndex = index;
-          showSnapshot(SnapshotsIndex);
-          break;
-        }
-      }
-    }
-  }
-
-  function prevSnapshot() {
-    if (Snapshots.length == 0) return;
-    LastNavigation = NAVIGATE_PREV;
-
-    if (Filter == SNAPSHOT_FILTER_ALL) {
-      if (SnapshotsIndex > 0) {
-        showSnapshot(--SnapshotsIndex);
-      }
-    }
-    else {
-      let index = SnapshotsIndex;
-      while (index > 0) {
-        if (Snapshots[--index].startsWith(Filter)) {
-          SnapshotsIndex = index;
-          showSnapshot(SnapshotsIndex);
-          break;
-        }
-      }
-    }
-  }
-
-  // Get a dictionary of snapshot filters where the keys are the filter labels
-  // that include a count in brackets of the number of matching snapshots and
-  // the keys are the filter strings.
-  function getFilters() {
-    if (Snapshots.length == 0) return undefined;
-
-    let filters = {};
-    Snapshots.forEach(function (entry) {
-      let pieces = entry.split('_');
-      pieces.pop();
-      let key = pieces.join('_');
-      filters[key] = ++filters[key] || 1;
-    });
-    filters[SNAPSHOT_FILTER_ALL] = Object.values(filters).reduce((accumulator, value) => {
-      return accumulator + value;
-    }, 0);
-
-    let rval = {};
-    for (let key in filters) {
-      rval[key + ' (' + filters[key] + ')'] = key;
-    }
-    return rval;
-  }
-
-  function showFilters() {
-    let filters = getFilters(Snapshots);
-    if (filters == undefined) return;
-
-    var f = $('<select />').attr('id', 'filterSelect').attr('class', 'control').attr('onchange', 'applyFilter()');
-
-    Object.keys(filters).toSorted().forEach(function (entry) {
-      $('<option />', {value: entry, text: entry}).appendTo(f);
-    });
-    f.appendTo('#filter');
-  }
-
-  function applyFilter() {
-    if (Snapshots.length == 0) return;
-
-    // Take the focus off the filter selection menu to prevent problems with
-    // using the left/right cursor keys to then navigate snapshots (e.g. on iPad)
-    $('#filterSelect').blur();
-
-    Filter = $('#filterSelect').find(':selected').text().split(' (')[0];
-
-    if ((Filter != SNAPSHOT_FILTER_ALL) && !Snapshots[SnapshotsIndex].startsWith(Filter)) {
-      if (LastNavigation == NAVIGATE_NEXT) {
-        nextSnapshot();
-      }
-      else {
-        prevSnapshot();
-      }
-    }
-  }
 
   function keydownHandler(e) {
     if (e.code == 'ArrowLeft') {
@@ -286,6 +91,13 @@
     document.onkeydown = keydownHandler;
   }
 
+  ////
+  // Button click handlers
+  ////////
+  function home(button)         { CONTROL.home(button);         }
+  function prevSnapshot(button) { CONTROL.prevSnapshot(button); }
+  function nextSnapshot(button) { CONTROL.nextSnapshot(button); }
+
   </script>
     <body onload="init()" bgcolor="black">
       <div class="holder">
@@ -294,10 +106,10 @@
         <div id="control">
           <div class="time" id="time"></div>
           <div class="button-group">
-            <div class="button" id="home" onclick="document.location.replace('/')">Home</div>
+            <div class="button" id="home" onclick="home(this)">Home</div>
             <div class="button" id="filter"></div>
-            <div class="button" id="prev" onclick="prevSnapshot()">&lt;&lt;</div>
-            <div class="button" id="next" onclick="nextSnapshot()">&gt;&gt;</div>
+            <div class="button" id="prev" onclick="prevSnapshot(this)">&lt;&lt;</div>
+            <div class="button" id="next" onclick="nextSnapshot(this)">&gt;&gt;</div>
           </div>
         </div>
      </div>

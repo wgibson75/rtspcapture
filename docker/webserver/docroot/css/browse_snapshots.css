@@ -1,0 +1,69 @@
+body {
+  height: 100vh;
+  width: 100vw;
+}
+
+select {
+  appearance: none;
+  background-color: rgba(64, 64, 64, 0.5);
+  color: #66ff33;
+  cursor: pointer;
+}
+
+#control {
+  display: flex;
+  flex-direction: column;
+  position: absolute;
+  border-radius: 6px;
+  background-color: rgba(128, 128, 128, 0.5);
+}
+
+#time {
+  border-radius: 0px 0px 0px 0px;
+  padding: 4px;
+  font-size: normal;
+  text-align: center;
+  vertical-align: middle
+  font-style: italic;
+  color: yellow;
+}
+
+#filter {
+  width: 100;
+}
+
+#home {
+  width: 50;
+}
+
+#snapshot {
+  width: 100%;
+  height: 100%;
+}
+
+.button-group {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  background-color: rgba(160, 160, 160, 0.5);
+  border-radius: 6px 6px 6px 6px;
+}
+
+.button {
+  border-style: solid;
+  border-width: thin;
+  border-color: rgba(64, 64, 64, 0.5);
+  border-radius: 6px 6px 6px 6px;
+  padding: 4px;
+  background-color: rgba(64, 64, 64, 0.5);
+  font-size: small;
+  text-align: center;
+  color: #66ff33;
+  width: 25;
+}
+
+.holder {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
