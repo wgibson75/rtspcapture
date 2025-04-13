@@ -108,6 +108,10 @@ class Snapshots {
     return this.#snapshots.length;
   }
 
+  getSnapshotIndex() {
+    return this.#snapshotsIndex;
+  }
+
   setFilter(filter) {
     this.#filter = filter;
     this.#updateSnapshotForFilter();
@@ -230,11 +234,13 @@ class Control {
   }
 
   prevSnapshot(button) {
+    if (this.#snapshotsObj.getSnapshotIndex() == 0) return;
     if (button) this.#showButtonPress(button);
     this.#snapshotsObj.prevSnapshot();
   }
 
   nextSnapshot(button) {
+    if ((this.#snapshotsObj.getSnapshotIndex() + 1) >= this.#snapshotsObj.getNumSnaphots()) return;
     if (button) this.#showButtonPress(button);
     this.#snapshotsObj.nextSnapshot();
   }
