@@ -111,11 +111,11 @@
       }
       else if ((16 in KEYS_DOWN) && // Shift
                (37 in KEYS_DOWN)) { // Left cursor
-        prevCam();
+        $("#prev-cam").click();
       }
       else if ((16 in KEYS_DOWN) && // Shift
                (39 in KEYS_DOWN)) { // Right cursor
-        nextCam();
+        $("#next-cam").click();
       }
       else if ((93 in KEYS_DOWN) && // Command
                (37 in KEYS_DOWN)) { // Left cursor
@@ -190,7 +190,7 @@
         <div class="button-group">
           <div id="prev-cam" class="button" onclick="prevCam(this)">Prv</div>
           <div id="play-state"></div>
-          <div id="next_cam" class="button" onclick="nextCam(this)">Nxt</div>
+          <div id="next-cam" class="button" onclick="nextCam(this)">Nxt</div>
         </div>
         <div id="entries"></div>
         <div class="button-group" id="iphone-buttons">

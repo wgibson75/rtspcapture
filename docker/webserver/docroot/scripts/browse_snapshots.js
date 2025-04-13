@@ -159,13 +159,17 @@ class Snapshots {
 }
 
 class Control {
-  #snapshotsObj   = null;
+  #BUTTON_PRESS_HIGHLIGHT_TIME_MS = 500;  // Duration of button highlight when pressed
 
   #controlId = null;
   #homeId    = null;
   #filterId  = null;
   #prevId    = null;
   #nextId    = null;
+
+  #snapshotsObj       = null;
+  #buttonPressTimeout = null;
+  #pressedButton      = null;
 
   constructor(snapshotsObj, elementIds) {
     this.#snapshotsObj = snapshotsObj
@@ -202,15 +206,36 @@ class Control {
     this.#snapshotsObj.setFilter(filter);
   }
 
+  #showButtonPress(button) {
+      if (this.#buttonPressTimeout != null) {
+          clearTimeout(this.#buttonPressTimeout);
+          this.#hideButtonPress(this.#pressedButton);
+      }
+      $(`#${button.id}`).toggleClass("button-highlight");
+
+      this.#pressedButton      = button;
+      this.#buttonPressTimeout = setTimeout(this.#hideButtonPress.bind(this), this.#BUTTON_PRESS_HIGHLIGHT_TIME_MS, button);
+  }
+
+  #hideButtonPress(button) {
+      $(`#${button.id}`).toggleClass("button-highlight");
+
+      this.#buttonPressTimeout = null;
+      this.#pressedButton      = null;
+  }
+
   home(button) {
+    if (button) this.#showButtonPress(button);
     document.location.replace('/');
   }
 
   prevSnapshot(button) {
+    if (button) this.#showButtonPress(button);
     this.#snapshotsObj.prevSnapshot();
   }
 
-  nextSnapshot(buttno) {
+  nextSnapshot(button) {
+    if (button) this.#showButtonPress(button);
     this.#snapshotsObj.nextSnapshot();
   }
 }

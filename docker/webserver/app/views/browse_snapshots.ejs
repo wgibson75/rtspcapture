@@ -80,10 +80,10 @@
 
   function keydownHandler(e) {
     if (e.code == 'ArrowLeft') {
-      prevSnapshot();
+      $('#prev').click();
     }
     else if ((e.code == 'ArrowRight') || (e.code == 'Space')) {
-      nextSnapshot();
+      $('#next').click();
     }
   }
 
