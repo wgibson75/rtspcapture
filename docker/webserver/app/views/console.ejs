@@ -6,14 +6,14 @@
   <body>
     <div style="font-size: 0">
       <script>
-      const VIDEO_WIDTH = '25%';
-      const CAPTURE_DIR = '<%= capture_dir %>';
-
-      var cameras = [];
-      <% cameras.forEach(name => { %>cameras.push("<%= name %>");
-      <% }); %>
-
       var cameras = '<%= cameras %>'.split(',');
+
+      const CAPTURE_DIR = '<%= capture_dir %>';
+      const VIDEO_WIDTH = (cameras.length <= 4)
+        ? '50%'
+        : (cameras.length <= 9)
+          ? video_width = '33.3%'
+          : video_width = '25%';
 
       cameras.forEach(function(name) {
         let linkUrl = `/play?c=${name}`;
