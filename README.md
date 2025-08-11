@@ -56,7 +56,7 @@ Where the SSD drive is concerned, it is recommended to use the biggest drive pos
 
 <ol>
 <li>Download the latest Ubuntu Server image for Raspberry Pi from here:<br><a href="https://ubuntu.com/download/raspberry-pi">https://ubuntu.com/download/raspberry-pi</a>
-<li>Write the image to your SD card. I recommend using Balena Etcher which can be downloaded here:<br><a href="https://etcher.balena.io](https://etcher.balena.io">https://etcher.balena.io](https://etcher.balena.io</a>
+<li>Write the image to your SD card. I recommend using Balena Etcher which can be downloaded here:<br><a href="https://etcher.balena.io">https://etcher.balena.io</a>
 <li>Before you bootup the Pi for the first time, you need to modify one of the configuration files on the boot partition of the SD card to setup the hostname; your username and your public SSH key for logging in over the network. Mount the SD card on your host and open the following file for editing:<br>/user-data
 <li>Add the following configuration to the end of this file, where:
 <ul>
