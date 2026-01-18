@@ -1,4 +1,4 @@
-docker/capture/DockerfileFROM alpine:3.19.0
+FROM alpine:3.19.0
 
 COPY requirements.txt .
 
