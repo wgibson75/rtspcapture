@@ -124,7 +124,6 @@ function create_app() {
 function create_server(app, port, isSecure) {
     connected_cb = () => {
         let ips = getHostIpList();
-        ips = [];
 
         for (i in ips) logger.info('Listening on: https://%s:%s', ips[i], port);
         if (ips.length == 0) logger.info('No network interfaces on port %s', port);
