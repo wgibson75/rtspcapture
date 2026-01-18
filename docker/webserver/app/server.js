@@ -54,7 +54,7 @@ function main() {
     app.use('/', contentRouter);
 
     const port = isNaN(process.argv[3]) ? DEFAULT_SECURE_PORT : process.argv[3];
-    create_server(app, port, false);
+    create_server(app, port, true);
 
     ////
     // Non-secure express app
