@@ -88,6 +88,7 @@ system_info:
 <li>(optional) I suggest installing the following additional packages to make life easier later:
 <pre>
 sudo apt install net-tools
+sudo apt install avahi-daemon
 sudo apt install htop
 </pre>
 </ol>
@@ -212,7 +213,7 @@ lrwxrwxrwx 1 root root 10 Jul 14 16:51 e2c1cf3e-c63b-4a72-85a6-4693a0dc2e0c -> .
 <pre>sudo vi /etc/fstab</pre>
 <li>Add a line that looks like this to the end of this file to mount the partition (substituting the UUID below for the UUID of your device):<br>
 <i>For example:</i>
-<pre>UUID=e2c1cf3e-c63b-4a72-85a6-4693a0dc2e0c /media/data     ext4    defaults        0       2</pre>
+<pre>UUID=e2c1cf3e-c63b-4a72-85a6-4693a0dc2e0c /media/data ext4 defaults,nofail 0 2</pre>
 <li>Save the modifications to /etc/fstab and reboot the Raspberry Pi to check the partition is automatically mounted. To do this, after rebooting, enter the following commands to query the available space on the partition (it should roughly match the size of disk you've connected):
 <pre>cd /media/data
 df -H .</pre>
