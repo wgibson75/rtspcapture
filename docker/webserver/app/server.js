@@ -48,7 +48,6 @@ function main() {
 
     let app = create_app();
 
-    // Setup the routes
     app.use('/', allRouter);
     app.use('/', authRouter);
     app.use('/', contentRouter);
@@ -62,11 +61,10 @@ function main() {
 
     let ns_app = create_app();
 
-    // Setup route for taking snapshots
     ns_app.use('/', allRouter);
+    ns_app.use('/', snapshotRouter); // For triggering snapshots
     ns_app.use('/', authRouter);
     ns_app.use('/', contentRouter);
-    ns_app.use('/', snapshotRouter); // For triggering snapshots
 
     const ns_port = isNaN(process.argv[4]) ? DEFAULT_NON_SECURE_PORT : process.argv[4];
     create_server(ns_app, ns_port, false);
