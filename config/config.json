@@ -17,7 +17,7 @@
     "health_poll_secs"        : 30,
     "time_must_be_dead_secs"  : 40,
     "min_free_disk_percent"   : 5,
-    "onvif_wsdl_defs"         : "/usr/lib/python3.11/site-packages/onvif_zeep-0.2.12-py3.11.egg/lib/python3.11/site-packages/wsdl",
+    "onvif_wsdl_defs"         : "/opt/venv/lib/python3.11/site-packages/wsdl",
     "checkmoov_interval_secs" : 60,
 
     "cameras" : [
