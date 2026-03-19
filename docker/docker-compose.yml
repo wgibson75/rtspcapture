@@ -9,6 +9,7 @@ services:
       - ./capture/app:/app
       - ../config:/config
       - media_data:/data
+    init: true
 
   checkmoov:
     image: checkmoov:latest
