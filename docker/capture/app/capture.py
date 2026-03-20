@@ -390,11 +390,11 @@ def signal_handler(sig, frame):
     for camera in cc_list:
         logger.info(f'Killing captures for {camera.name}')
         for live_stream in camera.get_live_streams():
-            logger.info(f'[killing live] {live_stream.get_cmd()}')
+            logger.info(f'[kill] {live_stream.get_cmd()}')
             live_stream.kill()
         rec_stream = camera.get_record_stream()
         if rec_stream:
-            logger.info(f'[killing record] {rec_stream.get_cmd()}')
+            logger.info(f'[kill] {rec_stream.get_cmd()}')
             rec_stream.kill()
 
 def main():
