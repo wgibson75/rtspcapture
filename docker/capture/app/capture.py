@@ -3,6 +3,7 @@ import argparse
 import os
 import sys
 import subprocess
+import signal
 import time
 import math
 import re
@@ -22,10 +23,13 @@ onvif_wsdl_defs = None
 # Number of seconds to elapse with no update for capture to be considered dead
 update_dead_time_secs = None
 
+# Camera capture list
+cc_list = []
+
 class CommandProc:
     def __init__(self, cmd):
         self.cmd = cmd
-        logger.info(f'Invoking command: {" ".join(cmd)}')
+        logger.info(f'Invoking command: {self.get_cmd()}')
         self.process = subprocess.Popen(self.cmd)
 
     def is_alive(self):
@@ -33,6 +37,9 @@ class CommandProc:
 
     def kill(self):
         self.process.terminate()
+
+    def get_cmd(self):
+        return ' '.join(self.cmd)
 
 class StreamCapture(ABC):
     def __init__(self, cam, stream):
@@ -60,6 +67,9 @@ class StreamCapture(ABC):
     def restart(self):
         self.kill()
         self._start()
+
+    def get_cmd(self):
+        return self.capture_proc.get_cmd()
 
 class LiveStreamCapture(StreamCapture):
     def __init__(self, cam, stream):
@@ -179,8 +189,8 @@ class RecordStreamCapture(StreamCapture):
 class CameraCapture:
     def __init__(self, cam, seg_time, seg_wrap):
         # Required for rebooting the camera
-        self.ip, self.onvif_port, self.username, self.password, self.reboot_on_failure = \
-            cam.ip, cam.onvif_port, cam.username, cam.password, cam.reboot_on_failure
+        self.name, self.ip, self.onvif_port, self.username, self.password, self.reboot_on_failure = \
+            cam.name, cam.ip, cam.onvif_port, cam.username, cam.password, cam.reboot_on_failure
         self.rebooting = False
 
         self.live_streams = [] # Stores all live stream captures
@@ -237,6 +247,12 @@ class CameraCapture:
             self.rebooting = True
         except Exception:
             logger.exception(f'Failed to reboot {self.ip}')
+
+    def get_live_streams(self):
+        return self.live_streams
+
+    def get_record_stream(self):
+        return self.record_stream
 
 class CheckDiskUsage:
     def __init__(self, config):
@@ -348,8 +364,7 @@ def configure_logging(config):
 def capture_from_cameras(config):
     global update_dead_time_secs
     global onvif_wsdl_defs
-
-    cc_list = [] # Camera capture list
+    global cc_list
 
     update_dead_time_secs = config.time_must_be_dead_secs
     onvif_wsdl_defs = config.onvif_wsdl_defs
@@ -369,7 +384,22 @@ def capture_from_cameras(config):
         health_check(cc_list)
         CheckDiskUsage(config)
 
+def signal_handler(sig, frame):
+    logger.info('Shutting down')
+
+    for camera in cc_list:
+        logger.info(f'Killing captures for {camera.name}')
+        for live_stream in camera.get_live_streams():
+            logger.info(f'[killing live] {live_stream.get_cmd()}')
+            live_stream.kill()
+        rec_stream = camera.get_record_stream()
+        if rec_stream:
+            logger.info(f'[killing record] {rec_stream.get_cmd()}')
+            rec_stream.kill()
+
 def main():
+    signal.signal(signal.SIGTERM, signal_handler)
+
     parser = argparse.ArgumentParser()
     parser.add_argument('config_file', help='CCTV JSON configuration file.')
     args = parser.parse_args()
