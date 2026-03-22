@@ -26,6 +26,9 @@ update_dead_time_secs = None
 # Camera capture list
 cc_list = []
 
+# Flags if we are shutting down
+shutting_down = False
+
 class CommandProc:
     def __init__(self, cmd):
         self.cmd = cmd
@@ -384,21 +387,40 @@ def capture_from_cameras(config):
         health_check(cc_list)
         CheckDiskUsage(config)
 
-def signal_handler(sig, frame):
-    logger.info('Shutting down')
+def sigterm_handler(sig, frame):
+    global shutting_down
 
+    logger.info('[SIGTERM] Shutting down')
+
+    shutting_down = True
     for camera in cc_list:
-        logger.info(f'Killing captures for {camera.name}')
-        for live_stream in camera.get_live_streams():
-            logger.info(f'[kill] {live_stream.get_cmd()}')
+        logger.info(f'Killing streams for {camera.name}')
+        for idx, live_stream in enumerate(camera.get_live_streams()):
+            label = 'high def' if idx == 0 else 'low def'
+            logger.info(f'Kill {label} live stream')
             live_stream.kill()
         rec_stream = camera.get_record_stream()
         if rec_stream:
-            logger.info(f'[kill] {rec_stream.get_cmd()}')
+            logger.info('Kill record stream')
             rec_stream.kill()
 
+def sigchld_handler(sig, frame):
+    global shutting_down
+
+    if shutting_down:
+        return # Ignore if we are shutting down
+
+    logger.info('[SIGCHLD] Checking for killed recordings')
+
+    for camera in cc_list:
+        rec_stream = camera.get_record_stream()
+        if rec_stream and not rec_stream.is_alive():
+            logger.info(f'Recording killed for {camera.name} (restarting)')
+            rec_stream.restart()
+
 def main():
-    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGTERM, sigterm_handler)
+    signal.signal(signal.SIGCHLD, sigchld_handler)
 
     parser = argparse.ArgumentParser()
     parser.add_argument('config_file', help='CCTV JSON configuration file.')
