@@ -17,7 +17,7 @@ from datetime import datetime,timezone
 from abc import ABC, abstractmethod
 from onvif import ONVIFCamera
 
-logger = logging.getLogger('capture_log')
+logger = logging.getLogger(__name__)
 onvif_wsdl_defs = None
 
 # Number of seconds to elapse with no update for capture to be considered dead
@@ -350,13 +350,11 @@ def health_check(cc_list):
 def configure_logging(config):
     logger.setLevel(logging.DEBUG)
 
-    log_dir = os.path.join(config.root_path, config.logs_dir)
-    if not os.path.exists(log_dir):
-        os.makedirs(log_dir)
-    log_path = os.path.join(log_dir, config.capture_log)
+    log_file = os.path.join(config.root_path, config.logs_dir, config.capture_log)
+    os.makedirs(os.path.dirname(log_file), 0o777, True)
 
     handler = RotatingFileHandler(
-        log_path,
+        log_file,
         maxBytes=config.log_max_bytes,
         backupCount=config.log_backup_count
     )
