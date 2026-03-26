@@ -18,14 +18,14 @@ from onvif import ONVIFCamera
 
 import utils
 
-logger = logging.getLogger(__name__)
-onvif_wsdl_defs = None
+LOGGER = logging.getLogger(__name__)
+ONVIF_DEFS = None
 
 # Number of seconds to elapse with no update for capture to be considered dead
-update_dead_time_secs = None
+UPDATE_DEAD_TIME_SECS = None
 
 # Camera capture list
-cc_list = []
+CC_LIST = []
 
 # Flags if we are shutting down
 shutting_down = False
@@ -34,7 +34,7 @@ shutting_down = False
 class CommandProc:
     def __init__(self, cmd):
         self.cmd = cmd
-        logger.info(f'Invoking command: {self.get_cmd()}')
+        LOGGER.info(f'Invoking command: {self.get_cmd()}')
         self.process = subprocess.Popen(self.cmd)
 
     def is_alive(self):
@@ -88,7 +88,7 @@ class LiveStreamCapture(StreamCapture):
         # Create output directory for live streaming
         out_dir = f'{self.name}/{stream.name}'
         if os.path.isdir(out_dir):
-            logger.info(f'Removing directory: {out_dir}')
+            LOGGER.info(f'Removing directory: {out_dir}')
             shutil.rmtree(out_dir)
         if not os.path.isdir(out_dir):
             os.mkdir(out_dir, 0o777)
@@ -140,7 +140,7 @@ class LiveStreamCapture(StreamCapture):
         if not os.path.isfile(self.out_playlist):
             return False
         secs_since_last_update = int(datetime.now(timezone.utc).timestamp() - os.lstat(self.out_playlist).st_mtime)
-        if (secs_since_last_update > update_dead_time_secs):
+        if (secs_since_last_update > UPDATE_DEAD_TIME_SECS):
             return False
         return True
 
@@ -184,7 +184,7 @@ class RecordStreamCapture(StreamCapture):
         if (len(files) == 0):
             return False
         secs_since_last_update = int(datetime.now(timezone.utc).timestamp() - os.lstat(files[0]).st_mtime)
-        if (secs_since_last_update > update_dead_time_secs):
+        if (secs_since_last_update > UPDATE_DEAD_TIME_SECS):
             return False
         return True
 
@@ -220,11 +220,11 @@ class CameraCapture:
 
     def health_check_standard(self):
         if not self.record_stream.is_alive():
-            logger.info(f'#### Recording from {self.record_stream.name} is dead. Restarting...')
+            LOGGER.info(f'#### Recording from {self.record_stream.name} is dead. Restarting...')
             self.record_stream.restart()
         for capture in self.live_streams:
             if not capture.is_alive():
-                logger.info(f'#### Live streaming from {capture.name} [stream:{capture.stream.name}] is dead. Restarting...')
+                LOGGER.info(f'#### Live streaming from {capture.name} [stream:{capture.stream.name}] is dead. Restarting...')
                 capture.restart()
 
     def health_check_reboot_on_failure(self):
@@ -233,20 +233,20 @@ class CameraCapture:
         else:
             attempt_reboot = False
             if not self.record_stream.is_alive():
-                logger.info(f'#### Recording from {self.record_stream.name} is dead.')
+                LOGGER.info(f'#### Recording from {self.record_stream.name} is dead.')
                 attempt_reboot = True
             for capture in self.live_streams:
                 if not capture.is_alive():
-                    logger.info(f'#### Live streaming from {capture.name} [stream:{capture.stream.name}] is dead.')
+                    LOGGER.info(f'#### Live streaming from {capture.name} [stream:{capture.stream.name}] is dead.')
                     attempt_reboot = True
             if attempt_reboot:
                 self.reboot()
 
     def restart_all_streams_after_reboot(self):
-        logger.info(f'#### Restarting recording from {self.record_stream.name}...')
+        LOGGER.info(f'#### Restarting recording from {self.record_stream.name}...')
         self.record_stream.restart()
         for capture in self.live_streams:
-            logger.info(f'#### Restarting live streaming from {capture.name} [stream:{capture.stream.name}]...')
+            LOGGER.info(f'#### Restarting live streaming from {capture.name} [stream:{capture.stream.name}]...')
             capture.restart()
         self.rebooting = False
 
@@ -255,11 +255,11 @@ class CameraCapture:
             return
 
         try:
-            cam = ONVIFCamera(self.ip, self.onvif_port, self.username, self.password, onvif_wsdl_defs)
-            logger.info(f'######## Rebooting {self.ip} : {cam.devicemgmt.SystemReboot()}')
+            cam = ONVIFCamera(self.ip, self.onvif_port, self.username, self.password, ONVIF_DEFS)
+            LOGGER.info(f'######## Rebooting {self.ip} : {cam.devicemgmt.SystemReboot()}')
             self.rebooting = True
         except Exception:
-            logger.exception(f'Failed to reboot {self.ip}')
+            LOGGER.exception(f'Failed to reboot {self.ip}')
 
     def get_live_streams(self):
         return self.live_streams
@@ -276,7 +276,7 @@ class CheckDiskUsage:
         while self.__is_usage_exceeded():
             oldest_file = self.__get_oldest_cam_file()
             if oldest_file:
-                logger.info(f'#### Deleting oldest recording: {os.path.basename(oldest_file)}')
+                LOGGER.info(f'#### Deleting oldest recording: {os.path.basename(oldest_file)}')
                 os.remove(oldest_file)
             else:  # Sanity check
                 break
@@ -329,24 +329,24 @@ class CheckDiskUsage:
 
     def __delete_oldest_rec(self, cam_name):
         files = sorted(glob.glob(os.path.join(self.capture_path, cam_name, '*.mp4')), key=os.path.getmtime)
-        logger.info(f'#### Deleting oldest recording: {os.path.basename(files[0])}')
+        LOGGER.info(f'#### Deleting oldest recording: {os.path.basename(files[0])}')
         os.remove(files[0])
 
 
-def health_check(cc_list):
-    for cc in cc_list:
+def health_check():
+    for cc in CC_LIST:
         cc.health_check()
 
 
 def capture_from_cameras(config):
-    global update_dead_time_secs
-    global onvif_wsdl_defs
-    global cc_list
+    global UPDATE_DEAD_TIME_SECS
+    global ONVIF_DEFS
+    global CC_LIST
 
-    update_dead_time_secs = config.time_must_be_dead_secs
-    onvif_wsdl_defs = config.onvif_wsdl_defs
+    UPDATE_DEAD_TIME_SECS = config.time_must_be_dead_secs
+    ONVIF_DEFS = config.onvif_wsdl_defs
 
-    logger.info('Starting capture...')
+    LOGGER.info('Starting capture...')
 
     capture_dir = os.path.join(config.root_path, config.capture_dir)
     if not os.path.exists(capture_dir):
@@ -354,29 +354,29 @@ def capture_from_cameras(config):
     os.chdir(capture_dir)
 
     for c in config.cameras:
-        cc_list.append(CameraCapture(c, config.segment_length, config.segment_wrap))
+        CC_LIST.append(CameraCapture(c, config.segment_length, config.segment_wrap))
 
     while True:
         time.sleep(config.health_poll_secs)
-        health_check(cc_list)
+        health_check()
         CheckDiskUsage(config)
 
 
 def sigterm_handler(sig, frame):
     global shutting_down
 
-    logger.info('[SIGTERM] Shutting down')
+    LOGGER.info('[SIGTERM] Shutting down')
 
     shutting_down = True
-    for camera in cc_list:
-        logger.info(f'Killing streams for {camera.name}')
+    for camera in CC_LIST:
+        LOGGER.info(f'Killing streams for {camera.name}')
         for idx, live_stream in enumerate(camera.get_live_streams()):
             label = 'high def' if idx == 0 else 'low def'
-            logger.info(f'Kill {label} live stream')
+            LOGGER.info(f'Kill {label} live stream')
             live_stream.kill()
         rec_stream = camera.get_record_stream()
         if rec_stream:
-            logger.info('Kill record stream')
+            LOGGER.info('Kill record stream')
             rec_stream.kill()
 
 
@@ -386,12 +386,12 @@ def sigchld_handler(sig, frame):
     if shutting_down:
         return  # Ignore if we are shutting down
 
-    logger.info('[SIGCHLD] Checking for killed recordings')
+    LOGGER.info('[SIGCHLD] Checking for killed recordings')
 
-    for camera in cc_list:
+    for camera in CC_LIST:
         rec_stream = camera.get_record_stream()
         if rec_stream and not rec_stream.is_alive():
-            logger.info(f'Recording killed for {camera.name} (restarting)')
+            LOGGER.info(f'Recording killed for {camera.name} (restarting)')
             rec_stream.restart()
 
 
@@ -406,12 +406,12 @@ def main():
     config = utils.load_config(args.config_file)
 
     log_file = os.path.join(config.root_path, config.logs_dir, config.capture_log)
-    utils.configure_logging(logger, log_file, config.log_max_bytes, config.log_backup_count)
+    utils.configure_logging(LOGGER, log_file, config.log_max_bytes, config.log_backup_count)
 
     try:
         capture_from_cameras(config)
     except Exception:
-        logger.exception('Fatal error in main loop')
+        LOGGER.exception('Fatal error in main loop')
 
 
 if __name__ == "__main__":
