@@ -3,6 +3,7 @@ import logging
 from logging.handlers import RotatingFileHandler
 import os
 
+
 def load_config(config_file):
     # Convert dictionary items to attributes
     class AttrifyDict(dict):
@@ -15,7 +16,7 @@ def load_config(config_file):
         def __setitem__(self, key, value):
             if isinstance(value, dict) and not isinstance(value, AttrifyDict):
                 value = AttrifyDict(value)
-            elif isinstance(value, list): # Support objects in a list
+            elif isinstance(value, list):  # Support objects in a list
                 value = [AttrifyDict(item) for item in value]
             super().__setitem__(key, value)
 
@@ -27,6 +28,7 @@ def load_config(config_file):
     with open(config_file) as json_config:
         config = json.load(json_config)
     return AttrifyDict(config)
+
 
 def configure_logging(logger, log_file, max_bytes, backup_count):
     logger.setLevel(logging.DEBUG)
@@ -41,4 +43,3 @@ def configure_logging(logger, log_file, max_bytes, backup_count):
     formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
     handler.setFormatter(formatter)
     logger.addHandler(handler)
-

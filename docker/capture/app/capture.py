@@ -12,7 +12,7 @@ import shutil
 import json
 import logging
 from types import SimpleNamespace
-from datetime import datetime,timezone
+from datetime import datetime, timezone
 from abc import ABC, abstractmethod
 from onvif import ONVIFCamera
 
@@ -30,6 +30,7 @@ cc_list = []
 # Flags if we are shutting down
 shutting_down = False
 
+
 class CommandProc:
     def __init__(self, cmd):
         self.cmd = cmd
@@ -37,7 +38,9 @@ class CommandProc:
         self.process = subprocess.Popen(self.cmd)
 
     def is_alive(self):
-        return True if (self.process.poll() == None) else False
+        if self.process.poll() is None:
+            return True
+        return False
 
     def kill(self):
         self.process.terminate()
@@ -45,17 +48,19 @@ class CommandProc:
     def get_cmd(self):
         return ' '.join(self.cmd)
 
+
 class StreamCapture(ABC):
     def __init__(self, cam, stream):
         self.name, self.username, self.password, self.ip, self.port, self.stream, self.capture_proc = \
             cam.name, cam.username, cam.password, cam.ip, cam.port, stream, None
 
         # Create top level camera capture directory
-        if not os.path.isdir(self.name): os.mkdir(self.name, 0o777)
+        if not os.path.isdir(self.name):
+            os.mkdir(self.name, 0o777)
 
     @abstractmethod
     def is_alive(self):
-        if ((self.capture_proc == None) or not self.capture_proc.is_alive()):
+        if self.capture_proc is None or not self.capture_proc.is_alive():
             return False
         return True
 
@@ -64,7 +69,7 @@ class StreamCapture(ABC):
         raise NotImplementedError()
 
     def kill(self):
-        if (self.capture_proc != None):
+        if self.capture_proc is not None:
             self.capture_proc.kill()
             self.capture_proc = None
 
@@ -74,6 +79,7 @@ class StreamCapture(ABC):
 
     def get_cmd(self):
         return self.capture_proc.get_cmd()
+
 
 class LiveStreamCapture(StreamCapture):
     def __init__(self, cam, stream):
@@ -99,7 +105,7 @@ class LiveStreamCapture(StreamCapture):
         cmd.extend(('-i', url))
 
         if (self.stream.include_audio):
-            if (self.stream.live_audio_advance_secs != None):
+            if (self.stream.live_audio_advance_secs is not None):
                 # Advance timestamps in the next (second) input stream
                 cmd.extend(('-itsoffset', f'{self.stream.live_audio_advance_secs}'))
                 # Specify a second (same) input stream
@@ -110,19 +116,19 @@ class LiveStreamCapture(StreamCapture):
                 cmd.extend(('-map', '1:1'))
             else:
                 cmd.extend(('-map', '0'))
-            cmd.extend(('-c:a', 'copy')) # Copy the audio
+            cmd.extend(('-c:a', 'copy'))  # Copy the audio
         else:
             cmd.extend(('-map', '0:0'))
 
-        cmd.extend(('-c:v', 'copy')) # Copy the video
+        cmd.extend(('-c:v', 'copy'))  # Copy the video
         cmd.extend(('-f', 'hls'))
         cmd.extend(('-hls_time', '1'))
         cmd.extend(('-hls_list_size', '10'))
         cmd.extend(('-hls_flags', 'delete_segments'))
         cmd.extend(('-hls_segment_type', 'fmp4'))
-        if self.stream.aspect != None:
+        if self.stream.aspect is not None:
             cmd.extend(('-aspect', self.stream.aspect))
-        if (self.stream.xargs != None):  # Add any extra arguments (ensuring we split on whitespace)
+        if (self.stream.xargs is not None):  # Add any extra arguments (ensuring we split on whitespace)
             cmd.extend((self.stream.xargs.split()))
         cmd.append((self.out_playlist))
 
@@ -137,6 +143,7 @@ class LiveStreamCapture(StreamCapture):
         if (secs_since_last_update > update_dead_time_secs):
             return False
         return True
+
 
 class RecordStreamCapture(StreamCapture):
     def __init__(self, cam, stream, seg_time, seg_wrap):
@@ -153,18 +160,18 @@ class RecordStreamCapture(StreamCapture):
         url = f'rtsp://{self.username}:{self.password}@{self.ip}:{self.port}{self.stream.path}'
         cmd = []
         cmd.append(('ffmpeg'))
-        cmd.extend(('-rtsp_transport', 'tcp')) # Prevent use of UDP to avoid packet loss
+        cmd.extend(('-rtsp_transport', 'tcp'))  # Prevent use of UDP to avoid packet loss
         cmd.extend(('-i', url))
-        cmd.extend(('-c', 'copy')) # Take an exact copy of the input stream
+        cmd.extend(('-c', 'copy'))  # Take an exact copy of the input stream
         cmd.extend(('-map', '0:0' if not self.stream.include_audio else '0'))
         cmd.extend(('-f', 'segment'))
         cmd.extend(('-segment_time', f'{self.seg_time}'))
         cmd.extend(('-segment_wrap', f'{self.seg_wrap}'))
         cmd.extend(('-segment_start_number', f'{self.get_segment_start_num()}'))
         cmd.extend(('-reset_timestamps', '1'))
-        if self.stream.vtag != None:
+        if self.stream.vtag is not None:
             cmd.extend(('-tag:v', self.stream.vtag))
-        if self.stream.aspect != None:
+        if self.stream.aspect is not None:
             cmd.extend(('-aspect', self.stream.aspect))
         cmd.append((self.out_record_format))
 
@@ -183,12 +190,14 @@ class RecordStreamCapture(StreamCapture):
 
     def get_segment_start_num(self):
         files = sorted(glob.glob(self.out_record_search), key=os.path.getmtime, reverse=True)
-        if (len(files) == 0): return 0
+        if (len(files) == 0):
+            return 0
         match = re.search(r'^.*?(\d+)\..*+$', files[0])
         if match:
-            return int(match.group(1)) + 1 # Segment number
+            return int(match.group(1)) + 1  # Segment number
         else:
             raise Exception(f'Unable to determine segment start number ({files[0]})')
+
 
 class CameraCapture:
     def __init__(self, cam, seg_time, seg_wrap):
@@ -197,9 +206,9 @@ class CameraCapture:
             cam.name, cam.ip, cam.onvif_port, cam.username, cam.password, cam.reboot_on_failure
         self.rebooting = False
 
-        self.live_streams = [] # Stores all live stream captures
+        self.live_streams = []  # Stores all live stream captures
         for idx, stream in enumerate(cam.streams):
-            if idx == 0: # Record only the first stream
+            if idx == 0:  # Record only the first stream
                 self.record_stream = RecordStreamCapture(cam, stream, seg_time, seg_wrap)
             self.live_streams.append(LiveStreamCapture(cam, stream))
 
@@ -220,7 +229,7 @@ class CameraCapture:
 
     def health_check_reboot_on_failure(self):
         if self.rebooting:
-            self.restart_all_streams_after_reboot() # Assume the reboot is complete
+            self.restart_all_streams_after_reboot()  # Assume the reboot is complete
         else:
             attempt_reboot = False
             if not self.record_stream.is_alive():
@@ -258,6 +267,7 @@ class CameraCapture:
     def get_record_stream(self):
         return self.record_stream
 
+
 class CheckDiskUsage:
     def __init__(self, config):
         self.config = config
@@ -268,7 +278,7 @@ class CheckDiskUsage:
             if oldest_file:
                 logger.info(f'#### Deleting oldest recording: {os.path.basename(oldest_file)}')
                 os.remove(oldest_file)
-            else: # Sanity check
+            else:  # Sanity check
                 break
 
     def __get_disk_usage(self):
@@ -289,7 +299,8 @@ class CheckDiskUsage:
             files = [os.path.join(cam_dir, f) for f in os.listdir(cam_dir) if re.match('.*\.mp4$', f, re.IGNORECASE)]
             files.sort(key=lambda x: os.path.getmtime(x))
 
-            if len(files) == 0: continue
+            if len(files) == 0:
+                continue
 
             oldest_cam_file = files[0]
             oldest_cam_mtime = os.path.getmtime(oldest_cam_file)
@@ -307,9 +318,11 @@ class CheckDiskUsage:
         for cam in self.cam_usage:
             current = self.cam_usage[cam]['total']
             expected = (self.cam_usage[cam]['average'] / self.total_average_rec_size) * self.max_usage
-            if current < expected: continue
+            if current < expected:
+                continue
             percent_over = ((current - expected) / expected) * 100
-            if percent_over < max_percent_over: continue
+            if percent_over < max_percent_over:
+                continue
             max_percent_over = percent_over
             cam_most_usage = cam
         return cam_most_usage
@@ -319,9 +332,11 @@ class CheckDiskUsage:
         logger.info(f'#### Deleting oldest recording: {os.path.basename(files[0])}')
         os.remove(files[0])
 
+
 def health_check(cc_list):
     for cc in cc_list:
         cc.health_check()
+
 
 def capture_from_cameras(config):
     global update_dead_time_secs
@@ -346,6 +361,7 @@ def capture_from_cameras(config):
         health_check(cc_list)
         CheckDiskUsage(config)
 
+
 def sigterm_handler(sig, frame):
     global shutting_down
 
@@ -363,11 +379,12 @@ def sigterm_handler(sig, frame):
             logger.info('Kill record stream')
             rec_stream.kill()
 
+
 def sigchld_handler(sig, frame):
     global shutting_down
 
     if shutting_down:
-        return # Ignore if we are shutting down
+        return  # Ignore if we are shutting down
 
     logger.info('[SIGCHLD] Checking for killed recordings')
 
@@ -376,6 +393,7 @@ def sigchld_handler(sig, frame):
         if rec_stream and not rec_stream.is_alive():
             logger.info(f'Recording killed for {camera.name} (restarting)')
             rec_stream.restart()
+
 
 def main():
     signal.signal(signal.SIGTERM, sigterm_handler)
@@ -394,6 +412,7 @@ def main():
         capture_from_cameras(config)
     except Exception:
         logger.exception('Fatal error in main loop')
+
 
 if __name__ == "__main__":
     main()
