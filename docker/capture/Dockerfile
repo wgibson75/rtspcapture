@@ -12,4 +12,5 @@ RUN apk update \
     && git clone https://github.com/FalkTannhaeuser/python-onvif-zeep.git \
     && cd python-onvif-zeep && python setup.py install
 
-CMD . /opt/venv/bin/activate && /app/capture.py /config/config.json
+ENV PATH="/opt/venv/bin:$PATH"
+CMD ["python", "/app/capture.py", "/config/config.json"]

@@ -11,6 +11,7 @@ import glob
 import shutil
 import json
 import logging
+import asyncio
 from types import SimpleNamespace
 from datetime import datetime, timezone
 from abc import ABC, abstractmethod
@@ -28,7 +29,10 @@ UPDATE_DEAD_TIME_SECS = None
 CC_LIST = []
 
 # Flags if we are shutting down
-shutting_down = False
+IS_SHUTTING_DOWN = False
+
+# Lock required to manage any capture process
+PROCESS_LOCK = asyncio.Lock()
 
 
 class CommandProc:
@@ -333,12 +337,15 @@ class CheckDiskUsage:
         os.remove(files[0])
 
 
-def health_check():
-    for cc in CC_LIST:
-        cc.health_check()
+async def health_check():
+    async with PROCESS_LOCK:
+        if IS_SHUTTING_DOWN:
+            return
+        for cc in CC_LIST:
+            cc.health_check()
 
 
-def capture_from_cameras(config):
+async def capture_from_cameras(config):
     global UPDATE_DEAD_TIME_SECS
     global ONVIF_DEFS
     global CC_LIST
@@ -357,47 +364,47 @@ def capture_from_cameras(config):
         CC_LIST.append(CameraCapture(c, config.segment_length, config.segment_wrap))
 
     while True:
-        time.sleep(config.health_poll_secs)
-        health_check()
+        await asyncio.sleep(config.health_poll_secs)
+        await health_check()
         CheckDiskUsage(config)
 
 
-def sigterm_handler(sig, frame):
-    global shutting_down
+async def sigterm_handler():
+    global IS_SHUTTING_DOWN
 
-    LOGGER.info('[SIGTERM] Shutting down')
-
-    shutting_down = True
-    for camera in CC_LIST:
-        LOGGER.info(f'Killing streams for {camera.name}')
-        for idx, live_stream in enumerate(camera.get_live_streams()):
-            label = 'high def' if idx == 0 else 'low def'
-            LOGGER.info(f'Kill {label} live stream')
-            live_stream.kill()
-        rec_stream = camera.get_record_stream()
-        if rec_stream:
-            LOGGER.info('Kill record stream')
-            rec_stream.kill()
-
-
-def sigchld_handler(sig, frame):
-    global shutting_down
-
-    if shutting_down:
-        return  # Ignore if we are shutting down
-
-    LOGGER.info('[SIGCHLD] Checking for killed recordings')
-
-    for camera in CC_LIST:
-        rec_stream = camera.get_record_stream()
-        if rec_stream and not rec_stream.is_alive():
-            LOGGER.info(f'Recording killed for {camera.name} (restarting)')
-            rec_stream.restart()
+    async with PROCESS_LOCK:
+        LOGGER.info('[SIGTERM] Shutting down')
+        IS_SHUTTING_DOWN = True
+        for camera in CC_LIST:
+            LOGGER.info(f'Killing streams for {camera.name}')
+            for idx, live_stream in enumerate(camera.get_live_streams()):
+                label = 'high def' if idx == 0 else 'low def'
+                LOGGER.info(f'Kill {label} live stream')
+                live_stream.kill()
+            rec_stream = camera.get_record_stream()
+            if rec_stream:
+                LOGGER.info('Kill record stream')
+                rec_stream.kill()
 
 
-def main():
-    signal.signal(signal.SIGTERM, sigterm_handler)
-    signal.signal(signal.SIGCHLD, sigchld_handler)
+async def sigchld_handler():
+    async with PROCESS_LOCK:
+        if IS_SHUTTING_DOWN:
+            return  # Ignore if we are shutting down
+
+        LOGGER.info('[SIGCHLD] Checking for killed recordings')
+
+        for camera in CC_LIST:
+            rec_stream = camera.get_record_stream()
+            if rec_stream and not rec_stream.is_alive():
+                LOGGER.info(f'Recording killed for {camera.name} (restarting)')
+                rec_stream.restart()
+
+
+async def main():
+    loop = asyncio.get_running_loop()
+    loop.add_signal_handler(signal.SIGTERM, lambda: asyncio.create_task(sigterm_handler()))
+    loop.add_signal_handler(signal.SIGCHLD, lambda: asyncio.create_task(sigchld_handler()))
 
     parser = argparse.ArgumentParser()
     parser.add_argument('config_file', help='CCTV JSON configuration file.')
@@ -409,10 +416,13 @@ def main():
     utils.configure_logging(LOGGER, log_file, config.log_max_bytes, config.log_backup_count)
 
     try:
-        capture_from_cameras(config)
+        await capture_from_cameras(config)
     except Exception:
         LOGGER.exception('Fatal error in main loop')
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        pass
