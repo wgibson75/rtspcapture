@@ -13,4 +13,4 @@ RUN apk update \
     && cd python-onvif-zeep && python setup.py install
 
 ENV PATH="/opt/venv/bin:$PATH"
-CMD ["/app/startup.sh"]
+CMD ["python", "/app/capture.py", "/config/config.json"]
