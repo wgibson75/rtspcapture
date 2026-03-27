@@ -4,6 +4,7 @@ services:
     build:
       context: ./capture
       dockerfile: Dockerfile
+    init: true
     restart: always
     volumes:
       - ./capture/app:/app
