@@ -6,3 +6,4 @@ ssl-server.key
 cookie-secret.txt
 .DS_Store
 ._*
+__pycache__
