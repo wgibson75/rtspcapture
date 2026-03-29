@@ -11,7 +11,6 @@ import shutil
 import json
 import logging
 import asyncio
-from types import SimpleNamespace
 from datetime import datetime, timezone
 from abc import ABC, abstractmethod
 from onvif import ONVIFCamera
@@ -396,6 +395,8 @@ async def main():
 
     log_file = os.path.join(cfg.root_path, cfg.logs_dir, cfg.capture_log)
     logger.configure(log_file, cfg.log_max_bytes, cfg.log_backup_count)
+
+    process.CommandProc(cfg.kill_rec_daemon_cmd)
 
     try:
         await capture_from_cameras(cfg)

@@ -4,6 +4,8 @@ services:
     build:
       context: ./capture
       dockerfile: Dockerfile
+    ports:
+      - "6666:6666"
     restart: always
     volumes:
       - ./capture/app:/app

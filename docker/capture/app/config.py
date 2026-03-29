@@ -14,7 +14,8 @@ def load(config_file):
             if isinstance(value, dict) and not isinstance(value, AttrifyDict):
                 value = AttrifyDict(value)
             elif isinstance(value, list):  # Support objects in a list
-                value = [AttrifyDict(item) for item in value]
+                if not isinstance(value[0], str):  # But support lists of strings as is
+                    value = [AttrifyDict(item) for item in value]
             super().__setitem__(key, value)
 
         def __getitem__(self, key):

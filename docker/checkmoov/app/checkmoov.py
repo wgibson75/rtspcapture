@@ -35,7 +35,7 @@ DATA_COPY_CHUNK_SIZE = 1024 * 1024 # Copy fixed data in 1Mb chunks
 LOG_MAX_BYTES    = 262144
 LOG_BACKUP_COUNT = 2
 
-logger = logging.getLogger('checkmoov_log')
+logger = logging.getLogger('check_moov_log')
 
 class CaptureConfig:
 
@@ -52,8 +52,8 @@ class CaptureConfig:
             self.camera_names   = [x['name'] for x in self.data['cameras']]
             self.log_file       = os.path.join(self.data['root_path'],
                                                self.data['logs_dir'],
-                                               self.data['checkmoov_log'])
-            self.check_interval = self.data['checkmoov_interval_secs']
+                                               self.data['check_moov_log'])
+            self.check_interval = self.data['check_moov_interval_secs']
         except KeyError:
             sys.exit('Unable to read capture configuration.')
 
