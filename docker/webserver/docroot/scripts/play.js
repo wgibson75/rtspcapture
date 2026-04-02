@@ -280,6 +280,10 @@ class Recordings {
         // Join complete human readable name
         return words.join(" ");
     }
+
+    getCameraId() {
+        return this.#camera;
+    }
 }
 
 
@@ -287,6 +291,7 @@ class Control {
     #LIVE_PLAY_ID                   = 0;    // ID of live playback stream
     #BUTTON_PRESS_HIGHLIGHT_TIME_MS = 500;  // Duration of button highlight when pressed
     #DAYS                           = ["Sun", "Mon", "Tue", "Wed", "Thur", "Fri", "Sat"];
+    #LIVE_LONG_PRESS_DELAY          = 2000;
 
     #recordings      = null;
     #playback        = null;
@@ -322,27 +327,32 @@ class Control {
 
     #recordingsLoadedCb() {
         this.#populate();
-        this.#showCameraName();
+        this.#setupTitlePane();
 
         if (this.#nextPlaybackTime != null) {
             // Get the entry index and offset position that matches this playback time
             let [idx, offset] = this.#recordings.getIdxAndOffsetForTime(this.#nextPlaybackTime);
 
-            this.scrollToEntry(idx);           // Scroll to the entry
-            $(`#${idx}`).click();              // Click the entry to trigger playback
-            this.#playback.setPosition(offset) // Set the playback position in milliseconds
+            this.scrollToEntry(idx);               // Scroll to the entry
+            document.getElementById(idx)?.click(); // Click the entry to trigger playback
+            this.#playback.setPosition(offset)     // Set the playback position in milliseconds
 
             this.#nextPlaybackTime = null;
         }
         else {
             // Trigger live stream playback with normal speed
-            $(`#${this.#LIVE_PLAY_ID}`).click();
+            document.getElementById(this.#LIVE_PLAY_ID)?.click();
             this.#playback.resetSpeed();
         }
     }
 
-    #showCameraName() {
-        $(`#${this.#titleId}`).text(this.#recordings.getCameraName());
+    #setupTitlePane() {
+        let titleObj = document.getElementById(this.#titleId);
+
+        titleObj.textContent = this.#recordings.getCameraName();
+        titleObj.addEventListener('dblclick', (event) => {
+            console.log("Killing recording for: " + this.#recordings.getCameraId());
+        });
     }
 
     #showButtonPress(button) {
@@ -350,14 +360,15 @@ class Control {
             clearTimeout(this.#buttonPressTimeout);
             this.#hideButtonPress(this.#pressedButton);
         }
-        $(`#${button.id}`).toggleClass("button-highlight");
+        button.classList.toggle("button-highlight");
 
         this.#pressedButton      = button;
-        this.#buttonPressTimeout = setTimeout(this.#hideButtonPress.bind(this), this.#BUTTON_PRESS_HIGHLIGHT_TIME_MS, button);
+        this.#buttonPressTimeout = setTimeout(this.#hideButtonPress.bind(this),
+                                              this.#BUTTON_PRESS_HIGHLIGHT_TIME_MS, button);
     }
 
     #hideButtonPress(button) {
-        $(`#${button.id}`).toggleClass("button-highlight");
+        button.classList.toggle("button-highlight");
 
         this.#buttonPressTimeout = null;
         this.#pressedButton      = null;
@@ -365,7 +376,7 @@ class Control {
 
     #populate() {
         // Clear the control first
-        $(`#${this.#entriesId}`).empty();
+        document.getElementById(this.#entriesId).innerHTML = "";
 
         // Build lookup table for indexes of recordings on day boundary
         let dayRecIdxLookup = {};
@@ -391,21 +402,23 @@ class Control {
                 $(`#${this.#entriesId}`).append(`<div class="entry-day-boundary">${text}</div>`);
             }
 
-            let text = (idx== this.#LIVE_PLAY_ID) ? "Live" : `${hrs}:${mins}:${secs}`; // First entry is live
+            let text = (idx == this.#LIVE_PLAY_ID) ? "Live" : `${hrs}:${mins}:${secs}`; // First entry is live
 
-            // Use the recording index as the entry ID
-            $(`#${this.#entriesId}`).append(
-                `<div class="entry-playback" id="${idx}" onclick="CONTROL.play(${idx})">` +
-                `  <div><hr></div><div style="flex-grow: 1">${text}</div><div><hr></div>` +
-                "</div>"
-            );
+            $("<div/>", {
+                class: "entry-playback",
+                id: idx,
+                html: `<div><hr></div><div style="flex-grow: 1">${text}</div><div><hr></div>`,
+                click: () => {
+                    this.play(idx);
+                }
+            }).appendTo(`#${this.#entriesId}`);
         }
 
         // Only show button for flipping position on iPhone
-        if (!IS_IPHONE) $(`#${this.#iPhoneButtonsId}`).hide();
+        if (!IS_IPHONE) document.getElementById(this.#iPhoneButtonsId).hidden = true;
 
         // Now show the control pane
-        $(`#${this.#controlId}`).css("display", "flex");
+        document.getElementById(this.#controlId).style.display = "flex";
     }
 
     #getCurrentPlaybackTime() {
@@ -425,9 +438,9 @@ class Control {
 
         // Handle selection highlight
         if ((this.#currentPlayId != null) && (this.#currentPlayId != idx)) {
-            $(`#${this.#currentPlayId}`).removeClass("entry-playback-selected");
+            document.getElementById(this.#currentPlayId)?.classList.remove("entry-playback-selected");
         }
-        $("#" + idx).addClass("entry-playback-selected");
+        document.getElementById(idx)?.classList.add("entry-playback-selected");
         this.#currentPlayId = idx;
 
         this.showPlaybackState();
