@@ -313,10 +313,11 @@ class Control {
     #iPhoneButtonsId = null;
     #repositionCb    = null;
 
-    #currentPlayId      = null;
-    #buttonPressTimeout = null;
-    #pressedButton      = null;
-    #nextPlaybackTime   = null; // Next playback time (as epoch) to use for next camera
+    #currentPlayId           = null;
+    #buttonPressTimeout      = null;
+    #pressedButton           = null;
+    #nextPlaybackTime        = null; // Next playback time (as epoch) to use for next camera
+    #waitingForKillRecUpdate = null; // Waiting for killed recording to update recordings
 
     #isFlipped = false; // Only used for iPhone to flip positioning of control
 
@@ -349,6 +350,14 @@ class Control {
 
             this.#nextPlaybackTime = null;
         }
+        else if (this.#waitingForKillRecUpdate) {
+            // Do not trigger any new playback for this type of update
+            this.#waitingForKillRecUpdate = false;
+
+            // Highlight the currently playing recording
+            this.#currentPlayId += 1;
+            document.getElementById(this.#currentPlayId)?.classList.add("entry-playback-selected");
+        }
         else {
             // Trigger live stream playback with normal speed
             document.getElementById(this.#LIVE_PLAY_ID)?.click();
@@ -367,9 +376,14 @@ class Control {
 
     // Define this as a class method to maintain "this" context
     #triggerKillRecRequest = (event) => {
+        if (this.#waitingForKillRecUpdate) {
+            return; // Ignore any kill request if one already in progress
+        }
         document.getElementById(this.#titleId).classList.toggle("killrec-wait-highlight");
         this.#recordings.killRecording(() => {
             document.getElementById(this.#titleId).classList.toggle("killrec-wait-highlight");
+            // Flag that the next recordings loaded update is for this request
+            this.#waitingForKillRecUpdate = true;
         });
     }
 
