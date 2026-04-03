@@ -14,7 +14,7 @@ HOST = '0.0.0.0'
 PORT = 6666
 
 # Pgrep pattern template to find recording process of given camera
-PGREP_PATTERN_TEMPLATE = '\\-segment_start_number.* {0}/'
+PGREP_PATTERN_TEMPLATE = '[\-]segment_start_number.* {0}/'
 
 
 def kill_recording_process(client_id, camera_name):

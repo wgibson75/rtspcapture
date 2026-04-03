@@ -5,6 +5,7 @@ const url         = require('url');
 const path        = require('path');
 const fs          = require('graceful-fs');
 const mime        = require('mime-types');
+const net         = require('net');
 
 const utils  = require('../utils');
 const config = require('../config');
@@ -108,9 +109,51 @@ router.get('/recordings', ensureLoggedIn, function(request, response, next) {
     response.end(JSON.stringify(data));
 });
 
-router.get(/^.*$/, ensureLoggedIn, function(request, response, next) {
-    logger.info('requestHandler_content');
+router.get('/kill_rec', ensureLoggedIn, async function(request, response, next) {
+    try {
+        const camera = request.query.c;
 
+        if (!utils.isCameraNameValid(camera)) return response.sendStatus(404);
+
+        const latest_rec = utils.getLatestRecordingFilename(camera);
+
+        await new Promise((resolve, reject) => {
+            const client = net.createConnection({ port: 6666, host: 'capture' }, () => {
+                client.write(camera);
+                client.end();
+                resolve();
+            });
+
+            client.on('error', (err) => {
+                reject(err);
+            });
+        });
+
+        let newest_rec = latest_rec;
+        let attempts = 0;
+        const maxAttempts = 20;
+        const delay = ms => new Promise(res => setTimeout(res, ms));
+
+        while ((newest_rec === latest_rec) && (attempts < maxAttempts)) {
+            await delay(200);
+            newest_rec = utils.getLatestRecordingFilename(camera);
+            attempts++;
+        }
+
+        if (newest_rec === latest_rec) {
+            return response.sendStatus(500);
+        }
+
+        response.setHeader('Content-Type', 'text/plain');
+        response.end(newest_rec); // Send the name of the new file back
+
+    }
+    catch (err) {
+        next(err); // Pass errors to next
+    }
+});
+
+router.get(/^.*$/, ensureLoggedIn, function(request, response, next) {
     if (request.url == '/') {
         num_days = utils.getTotalRecordTimeDays()
         logger.info('Total record time: %f', num_days);

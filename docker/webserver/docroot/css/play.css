@@ -43,8 +43,15 @@ hr {
   color: yellow;
 }
 
-#title, #play-state {
+#title {
+  border-radius: 6px 6px 0px 0px;
+}
+
+#play-state {
   border-radius: 0px 0px 0px 0px;
+}
+
+#title, #play-state {
   padding: 4px;
   font-size: small;
   text-align: center;
@@ -73,6 +80,10 @@ hr {
 
 .button-highlight {
   background-color: rgba(190, 190, 190, 0.5);
+}
+
+.killrec-wait-highlight {
+  background-color: rgba(190, 130, 130, 0.5);
 }
 
 .entry-day-boundary {

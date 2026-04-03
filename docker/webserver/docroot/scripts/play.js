@@ -284,6 +284,16 @@ class Recordings {
     getCameraId() {
         return this.#camera;
     }
+
+    killRecording(doneCb) {
+      fetch(`/kill_rec?c=${this.#camera}`)
+         .then((response) => {
+             if (response.ok) {
+                 this.#loadRecordings()
+             }
+             doneCb();
+         })
+    }
 }
 
 
@@ -348,10 +358,18 @@ class Control {
 
     #setupTitlePane() {
         let titleObj = document.getElementById(this.#titleId);
-
         titleObj.textContent = this.#recordings.getCameraName();
-        titleObj.addEventListener('dblclick', (event) => {
-            console.log("Killing recording for: " + this.#recordings.getCameraId());
+
+        // Remove the double click listener first in case it already exists
+        titleObj.removeEventListener("dblclick", this.#triggerKillRecRequest);
+        titleObj.addEventListener("dblclick", this.#triggerKillRecRequest);
+    }
+
+    // Define this as a class method to maintain "this" context
+    #triggerKillRecRequest = (event) => {
+        document.getElementById(this.#titleId).classList.toggle("killrec-wait-highlight");
+        this.#recordings.killRecording(() => {
+            document.getElementById(this.#titleId).classList.toggle("killrec-wait-highlight");
         });
     }
 

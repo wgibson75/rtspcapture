@@ -20,24 +20,17 @@ module.exports = {
     },
 
     getFilesSortedByDate: function(dirPath, ext) {
-        let files = [];
-        let regEx = undefined;
-
-        if (ext !== undefined) {
-            regEx = new RegExp('^.*\.' + ext + '$'); 
-        }
-
-        fs.readdirSync(dirPath).forEach((filename) => {
-            let fstat = fs.statSync(dirPath + '/' + filename);
-            let fitem = [filename, fstat];
-
-            if (fstat.isDirectory() ||                                // Ignore directories
-                ((regEx !== undefined) && (!regEx.test(filename)))) { // Ignore files that don't match extension
-                return;
-            }
-            files.push(fitem);
-        });
-        return this.sortFilesByDate(files);
+        return fs.readdirSync(dirPath)
+            .map(filename => ({
+                name: filename,
+                stat: fs.statSync(path.join(dirPath, filename))
+            }))
+            .filter(({ name, stat }) => {
+                const matchesExt = !ext || path.extname(name) === `.${ext}`;
+                return stat.isFile() && matchesExt;
+            })
+            .sort((a, b) => b.stat.mtimeMs - a.stat.mtimeMs)
+            .map(item => [item.name, item.stat]);
     },
 
     getFilenamesSortedByDate: function(dirPath, ext) {
@@ -50,38 +43,33 @@ module.exports = {
     },
 
     getTotalRecordTimeDays: function() {
-        let time = 0
-        let capture_root = path.join(config.get('root_path'), config.get('capture_dir'));
+        const cameras = config.get('cameras');
+        const regex = /.*_\d+\..*/; // Match only numbered recording files
 
-        config.get('cameras').forEach((camera) => {
-            let camera_path = path.join(capture_root, camera.name);
+        // Get the oldest recording timestamp across all cameras
+        const oldestTimestamp = cameras.reduce((earliest, camera) => {
+            const cameraPath = this.getCameraCaptureDir(camera.name);
 
-            if (!fs.existsSync(camera_path)) return; // Camera directory doesn't exit
+            if (!fs.existsSync(cameraPath)) return earliest;
 
-            let files = [];
-            let regex = /.*_\d+\..*/; // Match only numbered recording files
-            fs.readdirSync(camera_path).forEach((filename) => {
-                if (!filename.match(regex)) {
-                    return;
-                }
-                files.push(filename);
-            });
+            // Find the oldest file in the camera directory
+            const oldestInCamera = fs.readdirSync(cameraPath)
+                .filter(name => regex.test(name))
+                .sort() // Alphabetical sort works for numbered recordings
+                [0];    // Get the first (oldest) recording
 
-            if (files.length == 0) return; // No camera recordings
+            if (!oldestInCamera) return earliest;
 
-            let oldest_file = files.sort().shift();
-            let fstat = fs.statSync(path.join(camera_path, oldest_file));
+            const { ctimeMs } = fs.statSync(path.join(cameraPath, oldestInCamera));
 
-            if ((time == 0) || (fstat.ctimeMs < time))
-            {
-                time = fstat.ctimeMs;
-            }
-        });
+            // Return whichever time is older
+            return (earliest === 0 || ctimeMs < earliest) ? ctimeMs : earliest;
+        }, 0);
 
-        if (time == 0) return 0;
+        if (oldestTimestamp === 0) return 0;
 
-        let now = new Date().getTime();
-        return ((now - time) / (1000 * 24 * 60 * 60)).toFixed(2);
+        const msPerDay = 1000 * 60 * 60 * 24;
+        return ((Date.now() - oldestTimestamp) / msPerDay).toFixed(2);
     },
 
     isCameraNameValid: function(cameraName) {
@@ -92,15 +80,32 @@ module.exports = {
         return isValid;
     },
 
-    getCameraCaptureDir(cameraName) {
+    getCameraCaptureDir: function(cameraName) {
         return path.join(config.get('root_path'), config.get('capture_dir'), cameraName);
     },
 
-    getQuotedCameraNames() {
+    getQuotedCameraNames: function() {
         let cameras = [];
         config.get('cameras').forEach((camera) => {
             cameras.push(`'${camera.name}'`); // Camera name (quoted string for EJS)
         });
         return cameras;
+    },
+
+    getLatestRecordingFilename: function(cameraName) {
+        const captureDir = this.getCameraCaptureDir(cameraName);
+
+        if (!fs.existsSync(captureDir)) return null;
+
+        return fs.readdirSync(captureDir)
+            .filter(file => path.extname(file) === '.mp4')
+            .map(file => {
+                try {
+                    return { file, mtime: fs.statSync(path.join(captureDir, file)).mtimeMs };
+                } catch (e) {
+                    return { file, mtime: 0 }; // Handle files deleted during the read
+                }
+            })
+            .sort((a, b) => b.mtime - a.mtime)[0]?.file || null;
     }
 };
