@@ -340,8 +340,6 @@ class Control {
         this.#populate();
         this.#setupTitlePane();
 
-        console.log(this.#nextPlaybackTime);
-
         if (this.#nextPlaybackTime != null) {
             // Get the entry index and offset position that matches this playback time
             let [idx, offset] = this.#recordings.getIdxAndOffsetForTime(this.#nextPlaybackTime);
@@ -445,7 +443,7 @@ class Control {
         }
 
         // Only show button for flipping position on iPhone
-        if (!IS_IPHONE) document.getElementById(this.#iPhoneButtonsId).hidden = true;
+        if (!IS_IPHONE) document.getElementById(this.#iPhoneButtonsId).style.display = 'none';
 
         // Now show the control pane
         document.getElementById(this.#controlId).style.display = "flex";
