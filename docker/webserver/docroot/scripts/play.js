@@ -189,7 +189,7 @@ class Recordings {
                   this.#recordings.push([file, crtime, year, month, date, day, hrs, mins, secs, ms]);
               }
               // Call loaded callbacks
-              for (const callback of this.#loadedCbs) callback();
+              for (const callback of this.#loadedCbs) callback(this.#camera);
           });
     }
 
@@ -313,11 +313,11 @@ class Control {
     #iPhoneButtonsId = null;
     #repositionCb    = null;
 
-    #currentPlayId           = null;
-    #buttonPressTimeout      = null;
-    #pressedButton           = null;
-    #nextPlaybackTime        = null; // Next playback time (as epoch) to use for next camera
-    #waitingForKillRecUpdate = null; // Waiting for killed recording to update recordings
+    #currentPlayId      = null;
+    #buttonPressTimeout = null;
+    #pressedButton      = null;
+    #nextPlaybackTime   = null; // Next playback time (as epoch) to use for next camera
+    #currentCameraId    = null;
 
     #isFlipped = false; // Only used for iPhone to flip positioning of control
 
@@ -336,33 +336,33 @@ class Control {
         this.#recordings.setLoadedCb(this.#recordingsLoadedCb.bind(this));
     }
 
-    #recordingsLoadedCb() {
+    #recordingsLoadedCb(cameraId) {
         this.#populate();
         this.#setupTitlePane();
+
+        console.log(this.#nextPlaybackTime);
 
         if (this.#nextPlaybackTime != null) {
             // Get the entry index and offset position that matches this playback time
             let [idx, offset] = this.#recordings.getIdxAndOffsetForTime(this.#nextPlaybackTime);
 
-            this.scrollToEntry(idx);               // Scroll to the entry
-            document.getElementById(idx)?.click(); // Click the entry to trigger playback
-            this.#playback.setPosition(offset)     // Set the playback position in milliseconds
+            // Scroll to and highlight the new playback entry
+            this.scrollToEntry(idx);
+            document.getElementById(idx)?.classList.add("entry-playback-selected");
 
+            // Only change playback if either the camera or selected entry has changed
+            if ((cameraId != this.#currentCameraId) || (idx != this.#currentPlayId)) {
+                document.getElementById(idx)?.click(); // Click the entry to trigger playback
+                this.#playback.setPosition(offset)     // Set the playback position
+            }
             this.#nextPlaybackTime = null;
-        }
-        else if (this.#waitingForKillRecUpdate) {
-            // Do not trigger any new playback for this type of update
-            this.#waitingForKillRecUpdate = false;
-
-            // Highlight the currently playing recording
-            this.#currentPlayId += 1;
-            document.getElementById(this.#currentPlayId)?.classList.add("entry-playback-selected");
         }
         else {
             // Trigger live stream playback with normal speed
             document.getElementById(this.#LIVE_PLAY_ID)?.click();
             this.#playback.resetSpeed();
         }
+        this.#currentCameraId = cameraId;
     }
 
     #setupTitlePane() {
@@ -374,16 +374,14 @@ class Control {
         titleObj.addEventListener("dblclick", this.#triggerKillRecRequest);
     }
 
-    // Define this as a class method to maintain "this" context
     #triggerKillRecRequest = (event) => {
-        if (this.#waitingForKillRecUpdate) {
-            return; // Ignore any kill request if one already in progress
+        if (this.#nextPlaybackTime) {
+            return; // Ignore any kill request if waiting for play transition
         }
         document.getElementById(this.#titleId).classList.toggle("killrec-wait-highlight");
         this.#recordings.killRecording(() => {
             document.getElementById(this.#titleId).classList.toggle("killrec-wait-highlight");
-            // Flag that the next recordings loaded update is for this request
-            this.#waitingForKillRecUpdate = true;
+            this.#nextPlaybackTime = this.#getCurrentPlaybackTime();
         });
     }
 
@@ -455,26 +453,30 @@ class Control {
 
     #getCurrentPlaybackTime() {
         let startTime = this.#recordings.getStartTimeEpochSecs(this.#currentPlayId);
-        let position  = Math.round(this.#playback.getPosition())
+        let position = this.#currentPlayId == this.#LIVE_PLAY_ID
+           ? (new Date()).getTime() - startTime // Make up position for live
+           : Math.round(this.#playback.getPosition());
 
         return startTime + position;
     }
 
     // Note: recording index and corresponding entry ID in control pane are the same
     play(idx) {
+        // Remove highlight for previously selected playback entry
+        document.getElementById(this.#currentPlayId)?.classList.remove("entry-playback-selected");
+
         let url = this.#recordings.getPlayUrl(idx);
         this.#playback.play(url);
 
         // Set normal playback speed for live streaming
         if (idx == this.#LIVE_PLAY_ID) this.#playback.resetSpeed();
 
-        // Handle selection highlight
-        if ((this.#currentPlayId != null) && (this.#currentPlayId != idx)) {
-            document.getElementById(this.#currentPlayId)?.classList.remove("entry-playback-selected");
-        }
-        document.getElementById(idx)?.classList.add("entry-playback-selected");
         this.#currentPlayId = idx;
 
+        // Add highlight for newly selected playback entry
+        document.getElementById(idx)?.classList.add("entry-playback-selected");
+
+        this.#currentPlayId = idx;
         this.showPlaybackState();
     }
 
