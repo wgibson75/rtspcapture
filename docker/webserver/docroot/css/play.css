@@ -82,6 +82,10 @@ hr {
   background-color: rgba(190, 190, 190, 0.5);
 }
 
+.button-highlight.killrec {
+  background-color: rgba(226, 144, 202, 0.453);
+}
+
 .entry-day-boundary {
   text-align: center;
   background-color: rgba(100, 100, 255, 0.5);
