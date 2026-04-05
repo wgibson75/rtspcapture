@@ -183,9 +183,6 @@
       <video id="video" type="video/mp4" playsinline autoplay muted controls></video>
       <div id="control">
         <div class="title" id="title"></div>
-        <div class=""button-group">
-          <div id="kill-rec" class="button" onclick="killRec(this)">New Recording</div>
-        </div>
         <div class="button-group">
           <div id="speed-down" class="button" onclick="speedDown(this)">&lt;&lt;</div>
           <div id="play-pause" class="button" onclick="togglePlayPause(this)">Pause</div>
@@ -201,6 +198,9 @@
           <div id="seek-back" class="button" onclick="seekBack(this)">|&lt;&lt;</div>
           <div id="flip-position" class="button" onclick="reposition(this)">Repo</div>
           <div id="seek-forward" class="button" onclick="seekForward(this)">&gt;&gt;|</div>
+        </div>
+        <div class=""button-group">
+          <div id="kill-rec" class="button killrec" onclick="killRec(this)">New Recording</div>
         </div>
       </div>
     </div>
