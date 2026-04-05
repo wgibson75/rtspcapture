@@ -175,6 +175,7 @@
   function seekBack(button)        { CONTROL.seekBack(button);        }
   function reposition(button)      { CONTROL.reposition(button);      }
   function seekForward(button)     { CONTROL.seekForward(button);     }
+  function killRec(button)         { CONTROL.killRec(button);         }
 
   </script>
   <body>
@@ -182,6 +183,9 @@
       <video id="video" type="video/mp4" playsinline autoplay muted controls></video>
       <div id="control">
         <div class="title" id="title"></div>
+        <div class=""button-group">
+          <div id="kill-rec" class="button" onclick="killRec(this)">New Recording</div>
+        </div>
         <div class="button-group">
           <div id="speed-down" class="button" onclick="speedDown(this)">&lt;&lt;</div>
           <div id="play-pause" class="button" onclick="togglePlayPause(this)">Pause</div>

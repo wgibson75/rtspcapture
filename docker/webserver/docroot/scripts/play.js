@@ -318,6 +318,7 @@ class Control {
     #pressedButton      = null;
     #nextPlaybackTime   = null; // Next playback time (as epoch) to use for next camera
     #currentCameraId    = null;
+    #killRecInProgress  = false; // Flag to prevent multiple kill rec requests
 
     #isFlipped = false; // Only used for iPhone to flip positioning of control
 
@@ -366,21 +367,6 @@ class Control {
     #setupTitlePane() {
         let titleObj = document.getElementById(this.#titleId);
         titleObj.textContent = this.#recordings.getCameraName();
-
-        // Remove the double click listener first in case it already exists
-        titleObj.removeEventListener("dblclick", this.#triggerKillRecRequest);
-        titleObj.addEventListener("dblclick", this.#triggerKillRecRequest);
-    }
-
-    #triggerKillRecRequest = (event) => {
-        if (this.#nextPlaybackTime) {
-            return; // Ignore any kill request if waiting for play transition
-        }
-        document.getElementById(this.#titleId).classList.toggle("killrec-wait-highlight");
-        this.#recordings.killRecording(() => {
-            document.getElementById(this.#titleId).classList.toggle("killrec-wait-highlight");
-            this.#nextPlaybackTime = this.#getCurrentPlaybackTime();
-        });
     }
 
     #showButtonPress(button) {
@@ -551,5 +537,17 @@ class Control {
         this.#showButtonPress(button);
         this.#isFlipped = !this.#isFlipped;
         this.#repositionCb(false, false, this.#isFlipped);
+    }
+
+    killRec(button) {
+        this.#showButtonPress(button);
+        if (this.#killRecInProgress) {
+            return; // Ignore any kill request if one is already in progress
+        }
+        this.#killRecInProgress = true;
+        this.#recordings.killRecording(() => {
+            this.#nextPlaybackTime = this.#getCurrentPlaybackTime();
+            this.#killRecInProgress = false;
+        });
     }
 }
