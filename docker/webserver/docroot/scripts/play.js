@@ -540,12 +540,13 @@ class Control {
     }
 
     killRec(button) {
-        this.#showButtonPress(button);
+        button.classList.toggle("button-highlight");
         if (this.#killRecInProgress) {
             return; // Ignore any kill request if one is already in progress
         }
         this.#killRecInProgress = true;
         this.#recordings.killRecording(() => {
+            button.classList.toggle("button-highlight");
             this.#nextPlaybackTime = this.#getCurrentPlaybackTime();
             this.#killRecInProgress = false;
         });
