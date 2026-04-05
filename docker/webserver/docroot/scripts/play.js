@@ -313,12 +313,12 @@ class Control {
     #iPhoneButtonsId = null;
     #repositionCb    = null;
 
-    #currentPlayId      = null;
-    #buttonPressTimeout = null;
-    #pressedButton      = null;
-    #nextPlaybackTime   = null; // Next playback time (as epoch) to use for next camera
-    #currentCameraId    = null;
-    #killRecInProgress  = false; // Flag to prevent multiple kill rec requests
+    #currentPlayId       = null;
+    #buttonPressTimeout  = null;
+    #pressedButton       = null;
+    #nextPlaybackTime    = null; // Next playback time (as epoch) to use for next camera
+    #currentCameraId     = null;
+    #isKillRecInProgress = false; // Flag to prevent multiple kill rec requests
 
     #isFlipped = false; // Only used for iPhone to flip positioning of control
 
@@ -341,6 +341,12 @@ class Control {
         this.#populate();
         this.#setupTitlePane();
 
+        if (this.#isKillRecInProgress) {
+            // Adjust the play index as killing a recording
+            // will have added a new earlier recording entry
+            this.#currentPlayId += 1;
+        }
+
         if (this.#nextPlaybackTime != null) {
             // Get the entry index and offset position that matches this playback time
             let [idx, offset] = this.#recordings.getIdxAndOffsetForTime(this.#nextPlaybackTime);
@@ -350,7 +356,8 @@ class Control {
             document.getElementById(idx)?.classList.add("entry-playback-selected");
 
             // Only change playback if either the camera or selected entry has changed
-            if ((cameraId != this.#currentCameraId) || (idx != this.#currentPlayId)) {
+            if (!this.#isKillRecInProgress &&
+                ((cameraId != this.#currentCameraId) || (idx != this.#currentPlayId))) {
                 document.getElementById(idx)?.click(); // Click the entry to trigger playback
                 this.#playback.setPosition(offset)     // Set the playback position
             }
@@ -362,6 +369,7 @@ class Control {
             this.#playback.resetSpeed();
         }
         this.#currentCameraId = cameraId;
+        this.#isKillRecInProgress = false;
     }
 
     #setupTitlePane() {
@@ -540,15 +548,14 @@ class Control {
     }
 
     killRec(button) {
-        button.classList.toggle("button-highlight");
-        if (this.#killRecInProgress) {
+        if (this.#isKillRecInProgress) {
             return; // Ignore any kill request if one is already in progress
         }
-        this.#killRecInProgress = true;
+        button.classList.toggle("button-highlight");
+        this.#isKillRecInProgress = true;
         this.#recordings.killRecording(() => {
             button.classList.toggle("button-highlight");
             this.#nextPlaybackTime = this.#getCurrentPlaybackTime();
-            this.#killRecInProgress = false;
         });
     }
 }
