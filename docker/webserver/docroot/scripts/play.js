@@ -279,7 +279,7 @@ class Recordings {
             }
         });
         // Join complete human readable name
-        return words.join('');
+        return words.join(' ');
     }
 
     getCameraId() {
