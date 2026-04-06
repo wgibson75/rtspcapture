@@ -17,20 +17,23 @@ class Playback {
     constructor(videoElementId) {
         this.#video = document.getElementById(videoElementId);
 
-        this.#video.addEventListener("canplay", e => {
-            $("#video").show();
+        this.#video.addEventListener('canplay', e => {
+            $('#video').show();
         });
 
-        this.#video.addEventListener("ended", e => {
+        this.#video.addEventListener('ended', e => {
             if (this.#control != null) {
-                let currentPlayIdx = this.#control.getCurrentPlayIdx();
+                let playIdx = this.#control.getCurrentPlayIdx();
 
-                $(`#${--currentPlayIdx}`).click();           // Play the next video
-                this.#control.scrollToEntry(currentPlayIdx); // Scroll to next video entry
+                if (playIdx-- == 0) return;
+
+                let nextEntry = document.getElementById(playIdx);
+                nextEntry.click()                     // Play the next video entry
+                this.#control.scrollToEntry(playIdx); // Scroll to this entry
             }
         });
 
-        this.#video.addEventListener("play", e => {
+        this.#video.addEventListener('play', e => {
             this.#isPaused = false;
 
             if (this.#control != null) {
@@ -38,7 +41,7 @@ class Playback {
             }
         });
 
-        this.#video.addEventListener("pause", e => {
+        this.#video.addEventListener('pause', e => {
             this.#isPaused = true;
 
             if (this.#control != null) {
@@ -57,8 +60,6 @@ class Playback {
         this.#url = url;
         this.#video.src = url;
         this.#video.playbackRate = this.#SPEEDS[this.#speedIdx];
-
-        if (this.#isPaused) this.#video.pause()
 
         return true;
     }
@@ -134,7 +135,7 @@ class Playback {
     }
 
     getStatusString() {
-        return (this.#isPaused) ? "Paused" : `x${this.#SPEEDS[this.#speedIdx]}`;
+        return (this.#isPaused) ? 'Paused' : `x${this.#SPEEDS[this.#speedIdx]}`;
     }
 }
 
@@ -194,7 +195,7 @@ class Recordings {
     }
 
     #buildNoUpperCaseWordsLookup() {
-        let words = ["and", "in", "of", "or"];
+        let words = ['and', 'in', 'of', 'or'];
         for (let w of words) {
             this.#noUpperCaseWords[w] = true;
         }
@@ -278,7 +279,7 @@ class Recordings {
             }
         });
         // Join complete human readable name
-        return words.join(" ");
+        return words.join('');
     }
 
     getCameraId() {
@@ -300,7 +301,7 @@ class Recordings {
 class Control {
     #LIVE_PLAY_ID                   = 0;    // ID of live playback stream
     #BUTTON_PRESS_HIGHLIGHT_TIME_MS = 500;  // Duration of button highlight when pressed
-    #DAYS                           = ["Sun", "Mon", "Tue", "Wed", "Thur", "Fri", "Sat"];
+    #DAYS                           = ['Sun', 'Mon', 'Tue', 'Wed', 'Thur', 'Fri', 'Sat'];
 
     #recordings      = null;
     #playback        = null;
@@ -323,12 +324,12 @@ class Control {
     constructor(recsObj, playObj, elementIds, positionEpochMs, repositionCb) {
         this.#recordings       = recsObj;
         this.#playback         = playObj;
-        this.#controlId        = elementIds["controlId"];
-        this.#titleId          = elementIds["titleId"];
-        this.#entriesId        = elementIds["entriesId"];
-        this.#playPauseId      = elementIds["playPauseButtonId"];
-        this.#playbackStateId  = elementIds["playbackStateId"];
-        this.#iPhoneButtonsId  = elementIds["iphoneButtonsId"];
+        this.#controlId        = elementIds['controlId'];
+        this.#titleId          = elementIds['titleId'];
+        this.#entriesId        = elementIds['entriesId'];
+        this.#playPauseId      = elementIds['playPauseButtonId'];
+        this.#playbackStateId  = elementIds['playbackStateId'];
+        this.#iPhoneButtonsId  = elementIds['iphoneButtonsId'];
         this.#nextPlaybackTime = positionEpochMs ? positionEpochMs : null;
         this.#repositionCb     = repositionCb;
 
@@ -377,7 +378,7 @@ class Control {
             clearTimeout(this.#buttonPressTimeout);
             this.#hideButtonPress(this.#pressedButton);
         }
-        button.classList.toggle("button-highlight");
+        button.classList.toggle('button-highlight');
 
         this.#pressedButton      = button;
         this.#buttonPressTimeout = setTimeout(this.#hideButtonPress.bind(this),
@@ -385,7 +386,7 @@ class Control {
     }
 
     #hideButtonPress(button) {
-        button.classList.toggle("button-highlight");
+        button.classList.toggle('button-highlight');
 
         this.#buttonPressTimeout = null;
         this.#pressedButton      = null;
@@ -393,7 +394,7 @@ class Control {
 
     #populate() {
         // Clear the control first
-        document.getElementById(this.#entriesId).innerHTML = "";
+        document.getElementById(this.#entriesId).innerHTML = '';
 
         // Build lookup table for indexes of recordings on day boundary
         let dayRecIdxLookup = {};
@@ -407,35 +408,35 @@ class Control {
             let [year, month, date, day, hrs, mins, secs] = this.#recordings.getDateFieldsForDisplay(idx);
 
             // Format certain time fields
-            date  = ("0" + date).slice(-2);
-            month = ("0" + (month + 1)).slice(-2);
-            hrs   = ("0" + hrs).slice(-2);
-            mins  = ("0" + mins).slice(-2);
-            secs  = ("0" + secs).slice(-2);
+            date  = ('0' + date).slice(-2);
+            month = ('0' + (month + 1)).slice(-2);
+            hrs   = ('0' + hrs).slice(-2);
+            mins  = ('0' + mins).slice(-2);
+            secs  = ('0' + secs).slice(-2);
 
             // Show day boundary
             if (idx in dayRecIdxLookup) {
-                let text = `${this.#DAYS[day]} ${date}-${month}-${year}`;
-                $(`#${this.#entriesId}`).append(`<div class="entry-day-boundary">${text}</div>`);
+                const text = `${this.#DAYS[day]} ${date}-${month}-${year}`;
+                const panel = document.getElementById(this.#entriesId);
+                panel?.insertAdjacentHTML('beforeend', `<div class="entry-day-boundary">${text}</div>`);
             }
 
-            let text = (idx == this.#LIVE_PLAY_ID) ? "Live" : `${hrs}:${mins}:${secs}`; // First entry is live
+            let text = (idx == this.#LIVE_PLAY_ID) ? 'Live' : `${hrs}:${mins}:${secs}`; // First entry is live
 
-            $("<div/>", {
-                class: "entry-playback",
-                id: idx,
-                html: `<div><hr></div><div style="flex-grow: 1">${text}</div><div><hr></div>`,
-                click: () => {
-                    this.play(idx);
-                }
-            }).appendTo(`#${this.#entriesId}`);
+            const entry = document.createElement('div');
+            entry.className = 'entry-playback';
+            entry.id        = idx;
+            entry.innerHTML = `<div><hr></div><div style="flex-grow: 1">${text}</div><div><hr></div>`;
+            entry.addEventListener('click', () => this.play(idx));
+
+            document.getElementById(this.#entriesId)?.appendChild(entry);
         }
 
         // Only show button for flipping position on iPhone
         if (!IS_IPHONE) document.getElementById(this.#iPhoneButtonsId).style.display = 'none';
 
         // Now show the control pane
-        document.getElementById(this.#controlId).style.display = "flex";
+        document.getElementById(this.#controlId).style.display = 'flex';
     }
 
     #getCurrentPlaybackTime() {
@@ -450,7 +451,7 @@ class Control {
     // Note: recording index and corresponding entry ID in control pane are the same
     play(idx) {
         // Remove highlight for previously selected playback entry
-        document.getElementById(this.#currentPlayId)?.classList.remove("entry-playback-selected");
+        document.getElementById(this.#currentPlayId)?.classList.remove('entry-playback-selected');
 
         let url = this.#recordings.getPlayUrl(idx);
         this.#playback.play(url);
@@ -461,7 +462,7 @@ class Control {
         this.#currentPlayId = idx;
 
         // Add highlight for newly selected playback entry
-        document.getElementById(idx)?.classList.add("entry-playback-selected");
+        document.getElementById(idx)?.classList.add('entry-playback-selected');
 
         this.#currentPlayId = idx;
         this.showPlaybackState();
@@ -477,7 +478,7 @@ class Control {
 
         if (!entry) return;
 
-        entry.scrollIntoView({ block: 'start', behavior: 'smooth' });
+        entry.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 
         if (highlight) {
             panel.querySelector('.entry-playback-selected')?.classList.remove('entry-playback-selected');
@@ -487,7 +488,7 @@ class Control {
 
     showPlaybackState() {
         document.getElementById(this.#playPauseId).textContent
-            = this.#playback.isPaused() ? "Play" : "Pause";
+            = this.#playback.isPaused() ? 'Play' : 'Pause';
 
         document.getElementById(this.#playbackStateId).textContent
             = this.#playback.getStatusString();
@@ -554,10 +555,10 @@ class Control {
         if (this.#isKillRecInProgress) {
             return; // Ignore any kill request if one is already in progress
         }
-        button.classList.toggle("button-highlight");
+        button.classList.toggle('button-highlight');
         this.#isKillRecInProgress = true;
         this.#recordings.killRecording(() => {
-            button.classList.toggle("button-highlight");
+            button.classList.toggle('button-highlight');
         });
     }
 }
