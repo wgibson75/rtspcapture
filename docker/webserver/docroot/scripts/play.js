@@ -340,32 +340,32 @@ class Control {
         this.#populate();
         this.#setupTitlePane();
 
-        // Playback transition from one camera to the next
         if (this.#nextPlaybackTime != null) {
-            // Lookup new playback index of recording entry and current position
-            let [idx, offset] = this.#recordings.getIdxAndOffsetForTime(this.#nextPlaybackTime);
-
-            this.scrollToEntry(idx);
-            document.getElementById(idx)?.click();
-            this.#playback.setPosition(offset);
-        }
-        // Killing the current live recording
+            const [idx, offset] = this.#recordings.getIdxAndOffsetForTime(this.#nextPlaybackTime);
+            this.#triggerPlayback(idx, offset);
+        } 
         else if (this.#isKillRecInProgress) {
-            if (this.#currentPlayId != this.#LIVE_PLAY_ID) {
-                this.#currentPlayId += 1;
+            if (this.#currentPlayId !== this.#LIVE_PLAY_ID) {
+                this.#currentPlayId++;
             }
-            // Scroll to the entry but maintain current playback
             this.scrollToEntry(this.#currentPlayId, true);
-        }
-        // Otherwise, initial state
+        } 
         else if (this.#currentPlayId == null) {
-            // Trigger live stream playback with normal speed
-            document.getElementById(this.#LIVE_PLAY_ID)?.click();
             this.#playback.resetSpeed();
+            this.#triggerPlayback(this.#LIVE_PLAY_ID);
         }
 
+        // Reset state flags
         this.#isKillRecInProgress = false;
         this.#nextPlaybackTime = null;
+    }
+
+    #triggerPlayback(idx, offset = null) {
+        this.scrollToEntry(idx);
+        document.getElementById(idx)?.click();
+        if (offset !== null) {
+            this.#playback.setPosition(offset);
+        }
     }
 
     #setupTitlePane() {
