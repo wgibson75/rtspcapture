@@ -66,6 +66,7 @@ hr {
 }
 
 .button.killrec {
+  color: white; 
   background-color: rgba(225, 114, 194, 0.453);
 }
 
