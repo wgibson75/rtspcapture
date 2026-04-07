@@ -24,15 +24,11 @@ class Snapshots {
     }
 
     #loadSnapshotData(data) {
-        if (!(data instanceof Object)) return;
-        if (!('snapshots' in data)) return;
+        if (!data?.snapshots) return;
 
         this.#snapshots = data.snapshots;
         this.#showSnapshot();
-
-        if (this.#loadedCb !== null) {
-            this.#loadedCb();
-        }
+        this.#loadedCb?.();
     }
 
     #insertSnapshotPane() {
