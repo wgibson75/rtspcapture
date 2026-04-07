@@ -22,10 +22,10 @@ class Playback {
         });
 
         this.#video.addEventListener('ended', e => {
-            if (this.#control != null) {
+            if (this.#control !== null) {
                 let playIdx = this.#control.getCurrentPlayIdx();
 
-                if (playIdx-- == 0) return;
+                if (playIdx-- === 0) return;
 
                 let nextEntry = document.getElementById(playIdx);
                 nextEntry.click()                     // Play the next video entry
@@ -36,7 +36,7 @@ class Playback {
         this.#video.addEventListener('play', e => {
             this.#isPaused = false;
 
-            if (this.#control != null) {
+            if (this.#control !== null) {
                 this.#control.showPlaybackState();
             }
         });
@@ -44,7 +44,7 @@ class Playback {
         this.#video.addEventListener('pause', e => {
             this.#isPaused = true;
 
-            if (this.#control != null) {
+            if (this.#control !== null) {
                 this.#control.showPlaybackState();
             }
         });
@@ -100,7 +100,7 @@ class Playback {
 
     speedDown() {
         if (!this.#url) return false;          // Ignore if not playing anything
-        if (this.#speedIdx == 0) return false; // Ignore if already at min speed
+        if (this.#speedIdx === 0) return false; // Ignore if already at min speed
 
         if (this.#isPaused) {
             this.togglePlayPause(); // Toggle playback to commence
@@ -181,8 +181,8 @@ class Recordings {
                   let secs  = dateObj.getSeconds();
                   let ms    = dateObj.getMilliseconds();
 
-                  if (currentDay != day) {
-                      if (currentDay != null) {
+                  if (currentDay !== day) {
+                      if (currentDay !== null) {
                           this.#dayBoundaryIdxs.push(i);
                       }
                       currentDay = day;
@@ -212,7 +212,7 @@ class Recordings {
 
     prevCamera() {
         let idx = this.#cameraList.indexOf(this.#camera);
-        if ((idx == -1) || (idx == 0)) return false;
+        if ((idx === -1) || (idx === 0)) return false;
 
         this.setCamera(this.#cameraList[--idx]);
         return true;
@@ -220,7 +220,7 @@ class Recordings {
 
     nextCamera() {
         let idx = this.#cameraList.indexOf(this.#camera);
-        if ((idx == -1) || (idx == (this.#cameraList.length - 1))) return false;
+        if ((idx === -1) || (idx === (this.#cameraList.length - 1))) return false;
 
         this.setCamera(this.#cameraList[++idx]);
         return true;
@@ -245,7 +245,7 @@ class Recordings {
         if ((idx < 0) || (idx >= this.#recordings.length)) return;
 
         // Return the live stream URL for first recording or playback URL otherwise
-        return (idx == 0)
+        return (idx === 0)
             ? `/${CAPTURE_DIR}/${this.#camera}/high_res/live.m3u8`
             : `/${CAPTURE_DIR}/${this.#camera}/${this.#recordings[idx][0]}`;
     }
@@ -264,9 +264,7 @@ class Recordings {
       }
 
     getStartTimeEpochSecs(idx) {
-        if ((idx < 0) || (idx >= this.#recordings.length)) return;
-
-        let [file, crtime, year, month, date, day, hrs, mins, secs] = this.#recordings[idx];
+        const [, crtime] = this.#recordings[idx] ?? [];
         return crtime;
     }
 
@@ -340,7 +338,7 @@ class Control {
         this.#populate();
         this.#setupTitlePane();
 
-        if (this.#nextPlaybackTime != null) {
+        if (this.#nextPlaybackTime !== null) {
             const [idx, offset] = this.#recordings.getIdxAndOffsetForTime(this.#nextPlaybackTime);
             this.#triggerPlayback(idx, offset);
         } 
@@ -350,7 +348,7 @@ class Control {
             }
             this.scrollToEntry(this.#currentPlayId, true);
         } 
-        else if (this.#currentPlayId == null) {
+        else if (this.#currentPlayId === null) {
             this.#playback.resetSpeed();
             this.#triggerPlayback(this.#LIVE_PLAY_ID);
         }
@@ -374,7 +372,7 @@ class Control {
     }
 
     #showButtonPress(button) {
-        if (this.#buttonPressTimeout != null) {
+        if (this.#buttonPressTimeout !== null) {
             clearTimeout(this.#buttonPressTimeout);
             this.#hideButtonPress(this.#pressedButton);
         }
@@ -441,7 +439,7 @@ class Control {
 
     #getCurrentPlaybackTime() {
         let startTime = this.#recordings.getStartTimeEpochSecs(this.#currentPlayId);
-        let position = this.#currentPlayId == this.#LIVE_PLAY_ID
+        let position = this.#currentPlayId === this.#LIVE_PLAY_ID
            ? (new Date()).getTime() - startTime // Make up position for live
            : Math.round(this.#playback.getPosition());
 
@@ -457,7 +455,7 @@ class Control {
         this.#playback.play(url);
 
         // Set normal playback speed for live streaming
-        if (idx == this.#LIVE_PLAY_ID) this.#playback.resetSpeed();
+        if (idx === this.#LIVE_PLAY_ID) this.#playback.resetSpeed();
 
         this.#currentPlayId = idx;
 
@@ -506,7 +504,7 @@ class Control {
     }
 
     speedUp(button) {
-        if (this.#currentPlayId == this.#LIVE_PLAY_ID) return; // Do not support on live
+        if (this.#currentPlayId === this.#LIVE_PLAY_ID) return; // Do not support on live
         if (this.#playback.speedUp()) {
             this.#showButtonPress(button);
             this.showPlaybackState();
@@ -514,7 +512,7 @@ class Control {
     }
 
     speedDown(button) {
-        if (this.#currentPlayId == this.#LIVE_PLAY_ID) return; // Do not support on live
+        if (this.#currentPlayId === this.#LIVE_PLAY_ID) return; // Do not support on live
         if (this.#playback.speedDown()) {
             this.#showButtonPress(button);
             this.showPlaybackState();
@@ -534,13 +532,13 @@ class Control {
     }
 
     seekBack(button) {
-        if (this.#currentPlayId == this.#LIVE_PLAY_ID) return; // Do not support on live
+        if (this.#currentPlayId === this.#LIVE_PLAY_ID) return; // Do not support on live
         if (button) this.#showButtonPress(button);
         this.#playback.seekBack();
     }
 
     seekForward(button) {
-        if (this.#currentPlayId == this.#LIVE_PLAY_ID) return; // Do not support on live
+        if (this.#currentPlayId === this.#LIVE_PLAY_ID) return; // Do not support on live
         if (button) this.#showButtonPress(button);
         this.#playback.seekForward();
     }
