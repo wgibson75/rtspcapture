@@ -37,23 +37,28 @@ class Snapshots {
     }
 
     #showSnapshot() {
-        let time = this.#getSnapshotTime();
-        let date = new Date(0);
-        date.setUTCMilliseconds(time);
-        let d = date.toString().split(' ');
-        d.splice(5, d.length - 5);
-        d.splice(3, 1);
-        document.getElementById(this.#timeId).innerHTML = d.join(' ');
+        const time = this.#getSnapshotTime();
+        const date = new Date(time);
 
-        let snapshot = document.getElementById('snapshot');
-        snapshot.src = this.#getSnapshotUrl();
+        // Formats to: "Tue Apr 07 16:50:00" (Adjust options as needed)
+        const formattedDate = date.toLocaleString('en-GB', {
+            weekday: 'short',
+            month: 'short',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+        }).replace(/,/g, '');
+
+        document.getElementById(this.#timeId).textContent = formattedDate;
+        document.getElementById('snapshot').src = this.#getSnapshotUrl();
     }
 
     #getSnapshotTime() {
-        let filename = this.#snapshots[this.#snapshotsIndex];
-        let filenameNoExt = filename.split('.')[0];
-        let epoch = filenameNoExt.split('_')[1];
-        return epoch;
+        const filename = this.#snapshots[this.#snapshotsIndex];
+        const match = filename.match(/_(\d+)/);
+        return match ? Number(match[1]) : 0;
     }
 
     #getSnapshotUrl() {
@@ -61,15 +66,15 @@ class Snapshots {
     }
 
     #updateSnapshotForFilter() {
-        if ((this.#filter !== this.#SNAPSHOT_FILTER_ALL) &&
-            !this.#snapshots[this.#snapshotsIndex].startsWith(this.#filter)) {
-            if (this.#lastNavigation === this.#NAVIGATE_NEXT) {
-                this.nextSnapshot();
-            }
-            else {
-                this.prevSnapshot();
-            }
+        const current = this.#snapshots[this.#snapshotsIndex];
+
+        if (this.#filter === this.#SNAPSHOT_FILTER_ALL || current.startsWith(this.#filter)) {
+            return;
         }
+
+        this.#lastNavigation === this.#NAVIGATE_NEXT 
+            ? this.nextSnapshot() 
+            : this.prevSnapshot();
     }
 
     setLoadedCb(callback) {
@@ -82,22 +87,20 @@ class Snapshots {
     getFilters() {
         if (this.#snapshots.length === 0) return undefined;
 
-        let filters = {};
-        this.#snapshots.forEach(function (entry) {
-            let pieces = entry.split('_');
-            pieces.pop();
-            let key = pieces.join('_');
-            filters[key] = ++filters[key] || 1;
-        });
-        filters[this.#SNAPSHOT_FILTER_ALL] = Object.values(filters).reduce((accumulator, value) => {
-            return accumulator + value;
-        }, 0);
+        // Count occurrences of each prefix
+        const counts = this.#snapshots.reduce((acc, entry) => {
+            const prefix = entry.split('_').slice(0, -1).join('_');
+            acc[prefix] = (acc[prefix] || 0) + 1;
+            return acc;
+        }, {});
 
-        let rval = {};
-        for (let key in filters) {
-            rval[key + ' (' + filters[key] + ')'] = key;
-        }
-        return rval;
+        // Include the "All" total
+        counts[this.#SNAPSHOT_FILTER_ALL] = this.#snapshots.length;
+
+        // Transform each filter entry into the final label
+        return Object.fromEntries(
+            Object.entries(counts).map(([key, count]) => [`${key} (${count})`, key])
+        );
     }
 
     getNumSnaphots() {
@@ -117,21 +120,15 @@ class Snapshots {
         if (this.#snapshots.length === 0) return;
         this.#lastNavigation = this.#NAVIGATE_NEXT;
 
-        if (this.#filter === this.#SNAPSHOT_FILTER_ALL) {
-            if ((this.#snapshotsIndex + 1) < this.#snapshots.length) {
-                this.#snapshotsIndex++;
-                this.#showSnapshot();
-            }
-        }
-        else {
-            let index = this.#snapshotsIndex;
-            while ((index + 1) < this.#snapshots.length) {
-                if (this.#snapshots[++index].startsWith(this.#filter)) {
-                    this.#snapshotsIndex = index;
-                    this.#showSnapshot();
-                    break;
-                }
-            }
+        // Find the next index that matches the filter (starting after the current index)
+        const nextIndex = this.#snapshots.findIndex((snap, i) => 
+            i > this.#snapshotsIndex && 
+            (this.#filter === this.#SNAPSHOT_FILTER_ALL || snap.startsWith(this.#filter))
+        );
+
+        if (nextIndex !== -1) {
+            this.#snapshotsIndex = nextIndex;
+            this.#showSnapshot();
         }
     }
 
@@ -139,21 +136,15 @@ class Snapshots {
         if (this.#snapshots.length === 0) return;
         this.#lastNavigation = this.#NAVIGATE_PREV;
 
-        if (this.#filter === this.#SNAPSHOT_FILTER_ALL) {
-            if (this.#snapshotsIndex > 0) {
-                this.#snapshotsIndex--;
-                this.#showSnapshot();
-            }
-        }
-        else {
-            let index = this.#snapshotsIndex;
-            while (index > 0) {
-                if (this.#snapshots[--index].startsWith(this.#filter)) {
-                    this.#snapshotsIndex = index;
-                    this.#showSnapshot();
-                    break;
-                }
-            }
+        // Search backwards for the first match that appears before the current index
+        const prevIndex = this.#snapshots.findLastIndex((snap, i) => 
+            i < this.#snapshotsIndex && 
+            (this.#filter === this.#SNAPSHOT_FILTER_ALL || snap.startsWith(this.#filter))
+        );
+
+        if (prevIndex !== -1) {
+            this.#snapshotsIndex = prevIndex;
+            this.#showSnapshot();
         }
     }
 }
