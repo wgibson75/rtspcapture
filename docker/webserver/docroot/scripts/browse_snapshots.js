@@ -15,8 +15,8 @@ class Snapshots {
     #filter         = this.#SNAPSHOT_FILTER_ALL;
 
     constructor(jsonSummaryFile, elementIds) {
-        this.#mainId = elementIds["mainId"];
-        this.#timeId = elementIds["timeId"];
+        this.#mainId = elementIds['mainId'];
+        this.#timeId = elementIds['timeId'];
 
         this.#insertSnapshotPane();
 
@@ -40,7 +40,7 @@ class Snapshots {
         const time = this.#getSnapshotTime();
         const date = new Date(time);
 
-        // Formats to: "Tue Apr 07 16:50:00" (Adjust options as needed)
+        // Format date and time E.g. "Tue 07 Apr at 16:50:00"
         const formattedDate = date.toLocaleString('en-GB', {
             weekday: 'short',
             month: 'short',
@@ -166,53 +166,62 @@ class Control {
       this.#snapshotsObj = snapshotsObj
       this.#snapshotsObj.setLoadedCb(this.#snapshotsLoadedCb.bind(this));
 
-      this.#controlId = elementIds["controlId"];
-      this.#homeId    = elementIds["homeId"];
-      this.#filterId  = elementIds["filterId"];
-      this.#prevId    = elementIds["prevId"];
-      this.#nextId    = elementIds["nextId"];
+      this.#controlId = elementIds['controlId'];
+      this.#homeId    = elementIds['homeId'];
+      this.#filterId  = elementIds['filterId'];
+      this.#prevId    = elementIds['prevId'];
+      this.#nextId    = elementIds['nextId'];
     }
 
     #snapshotsLoadedCb() {
-        let filters = this.#snapshotsObj.getFilters();
-        if (filters === undefined) return;
+        const filters = this.#snapshotsObj.getFilters();
+        if (!filters) return;
 
-        var f = $('<select />').attr('id', 'filterSelect').attr('class', 'control');
-        Object.keys(filters).toSorted().forEach(function (entry) {
-          $('<option />', {value: entry, text: entry}).appendTo(f);
+        const $select = $('<select />', { id: 'filterSelect', class: 'control' });
+
+        Object.keys(filters).toSorted().forEach(label => {
+            $('<option />', { value: filters[label], text: label }).appendTo($select);
         });
-        f.appendTo(`#${this.#filterId}`);
 
-        $("#filterSelect").on('change', this.#applyFilter.bind(this));
+        $select
+            .appendTo(`#${this.#filterId}`)
+            .on('change', this.#applyFilter.bind(this));
     }
 
-    #applyFilter() {
+    #applyFilter(event) {
         if (this.#snapshotsObj.getNumSnaphots() === 0) return;
 
         // Take the focus off the filter selection menu to prevent problems with
         // using the left/right cursor keys to then navigate snapshots (e.g. on iPad)
-        $('#filterSelect').blur();
+        const $select = $(event.target);
+        $select.blur();
 
-        let filter = $('#filterSelect').find(':selected').text().split(' (')[0];
-        this.#snapshotsObj.setFilter(filter);
+        this.#snapshotsObj.setFilter($select.val());
     }
 
     #showButtonPress(button) {
-        if (this.#buttonPressTimeout !== null) {
+        if (this.#buttonPressTimeout) {
             clearTimeout(this.#buttonPressTimeout);
             this.#hideButtonPress(this.#pressedButton);
         }
-        $(`#${button.id}`).toggleClass("button-highlight");
 
-        this.#pressedButton      = button;
-        this.#buttonPressTimeout = setTimeout(this.#hideButtonPress.bind(this), this.#BUTTON_PRESS_HIGHLIGHT_TIME_MS, button);
+        const $btn = $(button);
+        $btn.addClass('button-highlight');
+        this.#pressedButton = button;
+
+        this.#buttonPressTimeout = setTimeout(() => {
+            this.#hideButtonPress(button);
+            this.#buttonPressTimeout = null;
+        }, this.#BUTTON_PRESS_HIGHLIGHT_TIME_MS);
     }
 
     #hideButtonPress(button) {
-        $(`#${button.id}`).toggleClass("button-highlight");
+        if (!button) return;
+
+        $(button).removeClass('button-highlight');
 
         this.#buttonPressTimeout = null;
-        this.#pressedButton      = null;
+        this.#pressedButton = null;
     }
 
     home(button) {
