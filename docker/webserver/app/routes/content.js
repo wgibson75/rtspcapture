@@ -111,45 +111,43 @@ router.get('/recordings', ensureLoggedIn, function(request, response, next) {
 
 router.get('/kill_rec', ensureLoggedIn, async function(request, response, next) {
     try {
-        const camera = request.query.c;
-
-        if (!utils.isCameraNameValid(camera)) return response.sendStatus(404);
-
-        const latest_rec = utils.getLatestRecordingFilename(camera);
-
-        await new Promise((resolve, reject) => {
-            const client = net.createConnection({ port: 6666, host: 'capture' }, () => {
-                client.write(camera);
-                client.end();
-                resolve();
-            });
-
-            client.on('error', (err) => {
-                reject(err);
-            });
+        const inCameras = [].concat(request.query.c || []);
+        const cameras = inCameras.filter(cam => {
+            const isValid = utils.isCameraNameValid(cam);
+            if (!isValid) logger.warn(`Ignoring unknown camera: ${cam}`);
+            return isValid;
         });
 
-        let newest_rec = latest_rec;
-        let attempts = 0;
+        if (cameras.length === 0) return response.sendStatus(404);
+
+        const initialRec = utils.getLatestRecordingFilename(cameras[0]);
+
+        await new Promise((resolve, reject) => {
+            const client = net.createConnection({ port: 6666, host: 'capture' })
+                .on('connect', () => { client.write(cameras.join(' ')); client.end(); })
+                .on('error', reject)
+                .on('close', resolve);
+            client.setTimeout(3000, () => { client.destroy(); reject(new Error('Timeout')); });
+        });
+
+        // Wait for new recording to be triggered for the first camera
         const maxAttempts = 20;
-        const delay = ms => new Promise(res => setTimeout(res, ms));
+        let newestRec = initialRec;
 
-        while ((newest_rec === latest_rec) && (attempts < maxAttempts)) {
-            await delay(200);
-            newest_rec = utils.getLatestRecordingFilename(camera);
-            attempts++;
+        for (let i = 0; i < maxAttempts; i++) {
+            await new Promise(res => setTimeout(res, 200));
+            newestRec = utils.getLatestRecordingFilename(cameras[0]);
+
+            if (newestRec !== initialRec) {
+                return response.type('text/plain').send(newestRec);
+            }
         }
 
-        if (newest_rec === latest_rec) {
-            return response.sendStatus(500);
-        }
-
-        response.setHeader('Content-Type', 'text/plain');
-        response.end(newest_rec); // Send the name of the new file back
-
+        response.sendStatus(500);
     }
     catch (err) {
-        next(err); // Pass errors to next
+        logger.error(`Kill recording failed: ${err.message}`);
+        next(err);
     }
 });
 
@@ -334,4 +332,3 @@ function getParentUrl(url) {
 }
 
 module.exports = router;
-

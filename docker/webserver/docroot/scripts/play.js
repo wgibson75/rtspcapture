@@ -284,14 +284,26 @@ class Recordings {
         return this.#camera;
     }
 
-    killRecording(doneCb) {
-      fetch(`/kill_rec?c=${this.#camera}`)
-         .then((response) => {
-             if (response.ok) {
-                 this.#loadRecordings()
-             }
-             doneCb();
-         })
+    killRecording(isKillAll, doneCb) {
+    const params = new URLSearchParams();
+
+    if (isKillAll) {
+        // Ensure the current camera is the first camera parameter as this needs to
+        // be killed first to update entries in the current playback control panel
+        const cameras = new Set([this.#camera, ...this.#cameraList]);
+
+        cameras.forEach(cam => params.append('c', cam));
+    } else {
+        params.append('c', this.#camera);
+    }
+
+    fetch(`/kill_rec?${params.toString()}`)
+        .then((response) => {
+        if (response.ok) {
+            this.#loadRecordings();
+        }
+        doneCb();
+        });
     }
 }
 
@@ -549,14 +561,22 @@ class Control {
         this.#repositionCb(false, false, this.#isFlipped);
     }
 
-    killRec(button) {
+    #kill(button, isKillAll) {
         if (this.#isKillRecInProgress) {
             return; // Ignore any kill request if one is already in progress
         }
         button.classList.toggle('button-highlight');
         this.#isKillRecInProgress = true;
-        this.#recordings.killRecording(() => {
+        this.#recordings.killRecording(isKillAll, () => {
             button.classList.toggle('button-highlight');
         });
+    }
+
+    killRec(button) {
+        this.#kill(button, false);
+    }
+
+    killAll(button) {
+        this.#kill(button, true);
     }
 }

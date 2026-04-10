@@ -17,46 +17,63 @@ PORT = 6666
 PGREP_PATTERN_TEMPLATE = '[\-]segment_start_number.* {0}/'
 
 
+def kill_pid(pid):
+    try:
+        os.kill(pid, signal.SIGTERM)
+        try:
+            os.kill(pid, 0)  # Signal 0 just checks if PID is still running
+            logging.info(f'Terminated process {pid}')
+        except ProcessLookupError:
+            logging.error(f'Failed to terminate process {pid}')
+    except Exception as e:
+        logging.error(f'Error killing PID {pid}: {e}')
+
+
 def kill_recording_process(client_id, camera_name):
     try:
         cmd = ['pgrep', '-f', PGREP_PATTERN_TEMPLATE.format(camera_name)]
         output = subprocess.check_output(cmd)
 
-        pids = output.decode().split()
+        pids = [int(pid) for pid in output.decode().split()]
         num_pids = len(pids)
 
         if num_pids == 0:
             logging.error(f'No matching PID found')
         elif num_pids > 1:
-            logging.error(f'Multiple matching PIDs found: {", ".join(pids)}')
+            logging.warning(f'Multiple matching PIDs found: {", ".join(pids)}')
+            for pid in reversed(pids):
+                kill_pid(pid)
         else:
-            pid = int(pids[0])
-            os.kill(pid, signal.SIGTERM)
-            try:
-                os.kill(pid, 0)  # Signal 0 just checks if PID is still running
-                logging.info(f'Terminated process {pid}')
-            except ProcessLookupError:
-                logging.error(f'Failed to terminate process {pid}')
+            kill_pid(pids[0])
 
     except Exception as e:
         logging.error(f'Unexpected error: {e}')
 
 
 def handle_request(conn, addr, cameras):
-    client_id = f'{addr[0]}:{addr[1]}'  # <host>:<port>
+    client_id = f'{addr[0]}:{addr[1]}'
 
     while True:
         try:
             msg = conn.recv(1024)
             if not msg:
                 break
-            camera_name = msg.decode().strip()
-            if camera_name not in cameras:
-                logging.warning(f'[{client_id}] Unknown camera: {camera_name}')
-                break
-            logging.info(f'[{client_id}] Kill recording: {camera_name}')
-            kill_recording_process(client_id, camera_name)
-        except:
+
+            requested_cameras = msg.decode().split()
+
+            if not requested_cameras:
+                continue
+
+            for camera_name in requested_cameras:
+                if camera_name not in cameras:
+                    logging.warning(f'[{client_id}] Unknown camera: {camera_name}')
+                    continue
+
+                logging.info(f'[{client_id}] Kill recording: {camera_name}')
+                kill_recording_process(client_id, camera_name)
+
+        except Exception as e:
+            logging.error(f'[{client_id}] Error: {e}')
             break
 
     conn.close()
