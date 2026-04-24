@@ -40,7 +40,7 @@ def kill_recording_process(client_id, camera_name):
         if num_pids == 0:
             logging.error(f'No matching PID found')
         elif num_pids > 1:
-            logging.warning(f'Multiple matching PIDs found: {", ".join(pids)}')
+            logging.warning(f'Multiple matching PIDs found: {", ".join(map(str, pids))}')
             for pid in reversed(pids):
                 kill_pid(pid)
         else:
