@@ -11,6 +11,7 @@ services:
       - ./capture/app:/app
       - ../config:/config
       - media_data:/data
+      - /sys:/sys:ro
 
   checkmoov:
     image: checkmoov:latest
