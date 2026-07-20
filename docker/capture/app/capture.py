@@ -243,6 +243,8 @@ async def main():
     log_file = os.path.join(cfg.root_path, cfg.logs_dir, cfg.capture_log)
     logger.configure(log_file, cfg.log_max_bytes, cfg.log_backup_count)
 
+    logging.info('Starting up...')
+
     # Make sure we are not about to write video data to the
     # system SD Card on failure to mount the main SSD drive
     system.check_storage_safeguard(cfg.root_path)
