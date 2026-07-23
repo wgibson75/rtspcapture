@@ -7,11 +7,14 @@ services:
     ports:
       - "6666:6666"
     restart: always
+    privileged: true
+    tty: true
     volumes:
       - ./capture/app:/app
       - ../config:/config
       - media_data:/data
       - /sys:/sys:ro
+      - /proc:/host_proc
 
   checkmoov:
     image: checkmoov:latest
