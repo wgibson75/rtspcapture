@@ -8,7 +8,10 @@ services:
       - "6666:6666"
     restart: always
     privileged: true
+    pid: "host"
     tty: true
+    environment:
+      - PYTHONUNBUFFERED=1
     volumes:
       - ./capture/app:/app
       - ../config:/config

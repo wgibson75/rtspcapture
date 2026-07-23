@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+import subprocess
 
 import logging
 
@@ -36,38 +37,57 @@ def check_storage_safeguard(storage_path):
 
 
 def reboot_host():
+    # Setup immediate flushing for logging
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger()
+    for handler in logger.handlers:
+        handler.flush = sys.stderr.flush
+
+    logging.info("Attempting to reboot host")
+    sys.stderr.flush()
+
+    # Try the standard and reliable container-to-host reboot
+    try:
+        logging.info("Attempting namespace-escaped host reboot")
+        sys.stderr.flush()
+
+        # Tell the host's systemd/system-init to reboot cleanly
+        subprocess.run(["nsenter", "--target", "1", "--mount", "--uts", "--ipc", "--net", "--pid", "reboot"], check=True)
+
+        # Wait for termination
+        time.sleep(10)
+    except Exception as e:
+        logging.error(f"Namespace reboot failed: {e} - falling back to SysRq trigger")
+        sys.stderr.flush()
+
+    # Otherwise, fallback to forced SysRq sequence
     trigger_path = "/host_proc/sysrq-trigger"
-    
     if not os.path.exists(trigger_path):
         logging.error(f"Reboot trigger path not found: {trigger_path}")
+        sys.stderr.flush()
         sys.exit(1)
 
-    logging.info("Initiating emergency host reboot sequence via SysRq...")
-    
     try:
-        # Use low-level, unbuffered binary write to guarantee immediate kernel delivery
-        fd = os.open(trigger_path, os.O_WRONLY)
-        try:
-            logging.info("Sending 's' (syncing disks)")
-            os.write(fd, b"s\n")
+        # Open as unbuffered binary file
+        with open(trigger_path, "wb", buffering=0) as f:
+            logging.info("Sending SysRq 's' (syncing disks)...")
+            sys.stderr.flush()
+            f.write(b"s\n")
             time.sleep(2) 
             
-            logging.info("Sending 'u' (remounting read-only)")
-            os.write(fd, b"u\n")
+            logging.info("Sending SysRq 'u' (remounting read-only)...")
+            sys.stderr.flush()
+            f.write(b"u\n")
             time.sleep(1)
             
-            logging.info("Sending 'b' (rebooting host now!)")
-            os.write(fd, b"b\n")
+            # WARNING: This may cause a power shutdown rather than a reboot
+            logging.info("Sending SysRq 'b' (Hard resetting CPU)...")
+            sys.stderr.flush()
+            f.write(b"b\n")
 
-            logging.info("Waiting for host reboot...")
             while True:
-                time.sleep(3600)
-        finally:
-            os.close(fd)
-            
+                time.sleep(1)
     except PermissionError:
-        logging.error("Permission denied. Container requires privileged mode or cap_add: [SYS_BOOT].")
-        sys.exit(1)
-    except Exception as e:
-        logging.error(f"Failed to execute SysRq reboot: {e}")
+        logging.error("Permission denied. Container requires --privileged mode.")
+        sys.stderr.flush()
         sys.exit(1)
