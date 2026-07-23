@@ -58,6 +58,10 @@ def reboot_host():
             
             logging.info("Sending 'b' (rebooting host now!)")
             os.write(fd, b"b\n")
+
+            logging.info("Waiting for host reboot...")
+            while True:
+                time.sleep(3600)
         finally:
             os.close(fd)
             
