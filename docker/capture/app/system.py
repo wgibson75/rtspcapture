@@ -6,6 +6,8 @@ import logging
 
 
 def check_storage_safeguard(storage_path):
+    is_valid = False
+
     try:
         stat_info = os.stat(storage_path)
         # Warning: inside certain Docker configurations, st_dev may reflect the overlayfs ID
@@ -14,7 +16,6 @@ def check_storage_safeguard(storage_path):
         if not os.path.exists(sys_dev_link):
             logging.critical(f'CRITICAL ERROR: Cannot access host hardware info via {sys_dev_link}.')
             logging.critical('Make sure your docker run command includes: -v /sys:/sys:ro')
-            sys.exit(1)
             
         real_path = os.path.realpath(sys_dev_link)
         
@@ -24,13 +25,14 @@ def check_storage_safeguard(storage_path):
             logging.critical('This indicates the host failed to mount the SSD after reboot.')
             logging.critical('Aborting execution immediately to prevent MicroSD degradation.')
             logging.critical('=' * 60)
-            sys.exit(1)
             
         logging.info(f"Storage verification passed. {storage_path} is safely routed to external storage.")
+        is_valid = True
         
     except Exception:
         logging.exception('CRITICAL ERROR: Failed to run storage safeguard check')
-        sys.exit(1)
+
+    return is_valid
 
 
 def reboot_host():

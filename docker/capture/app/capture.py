@@ -9,6 +9,7 @@ import shutil
 import json
 import logging
 import asyncio
+import time
 from onvif import ONVIFCamera
 
 import config
@@ -247,7 +248,9 @@ async def main():
 
     # Make sure we are not about to write video data to the
     # system SD Card on failure to mount the main SSD drive
-    system.check_storage_safeguard(cfg.root_path)
+    if not system.check_storage_safeguard(cfg.root_path):
+        time.sleep(300) # Wait for 5 minutes before rebooting
+        system.reboot_host()
 
     process.CommandProc(cfg.kill_rec_daemon_cmd)
 
