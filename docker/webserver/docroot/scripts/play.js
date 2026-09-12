@@ -59,8 +59,14 @@ class Playback {
 
         this.#url = url;
         this.#video.src = url;
-        this.#video.playbackRate = this.#SPEEDS[this.#speedIdx];
 
+        if (this.#isPaused) {
+            // Maintain paused speed state
+            this.#speedIdx = this.#PAUSED_SPEED_IDX;
+            this.#video.pause();
+        } else {
+            this.#video.playbackRate = this.#SPEEDS[this.#speedIdx];
+        }
         return true;
     }
 
