@@ -8,6 +8,7 @@ RUN apk update \
     && apk add openssh \
     && apk add wget \
     && apk add yasm \
+    && apk add coreutils \
     && git clone https://github.com/anthwlock/untrunc.git \
     && cd untrunc \
     && make FF_VER=3.3.9
