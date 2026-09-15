@@ -10,6 +10,14 @@ select {
   cursor: pointer;
 }
 
+#snapshot,
+#main img {
+  display: block;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
 #control {
   display: flex;
   flex-direction: column;
@@ -29,11 +37,11 @@ select {
 }
 
 #filter {
-  width: 100;
+  width: 100px;
 }
 
 #home {
-  width: 50;
+  width: 50px;
 }
 
 #snapshot {
@@ -59,7 +67,7 @@ select {
   font-size: small;
   text-align: center;
   color: #66ff33;
-  width: 25;
+  width: 25px;
 }
 
 .button-highlight {
