@@ -22,21 +22,23 @@
     <form id="auth_form" method="post">
       <input type="hidden" name="_csrf" value="<%= csrfToken %>">
     </form>
+
     <table class="auth" border="0">
       <tr class="auth">
-        <td class="auth" onclick="submit('/logout')">LOGOUT</td>
-        <td class="auth" onclick="gotoUrl('/signup')">SIGNUP</td>
-        <td class="auth" onclick="gotoUrl('/accounts')">ACCOUNTS</td>
+        <td><div class="cell-content" onclick="submit('/logout')">LOGOUT</div></td>
+        <td><div class="cell-content" onclick="gotoUrl('/signup')">SIGNUP</div></td>
+        <td><div class="cell-content" onclick="gotoUrl('/accounts')">ACCOUNTS</div></td>
       </tr>
     </table>
+
     <table border="0">
       <tr>
-        <td onclick="gotoUrl('/console')">Console</td>
-        <td onclick="gotoUrl('/snapshots')">Snapshots</td>
+        <td><div class="cell-content" onclick="gotoUrl('/console')">Console</div></td>
+        <td><div class="cell-content" onclick="gotoUrl('/snapshots')">Snapshots</div></td>
       </tr>
       <tr>
-        <td onclick="gotoUrl('/capture')">Recordings</td>
-        <td onclick="gotoUrl('/logs')">Logs</td>
+        <td><div class="cell-content" onclick="gotoUrl('/capture')">Recordings</div></td>
+        <td><div class="cell-content" onclick="gotoUrl('/logs')">Logs</div></td>
       </tr>
     </table>
   </body>
